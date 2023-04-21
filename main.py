@@ -13,6 +13,8 @@ import parser
 from datasets.test_dataset import TestDataset
 from datasets.train_dataset import TrainDataset
 
+import os
+
 
 class LightningModel(pl.LightningModule):
     def __init__(self, val_dataset, test_dataset, descriptors_dim=512, num_preds_to_save=0, save_only_wrong_preds=True):
