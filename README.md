@@ -24,7 +24,8 @@ You can install the required packages by running
 You can choose to validate/test on sf_xs or tokyo_xs.
 
 
->python main.py --train_path /path/to/datasets/gsv_xs --val_path /path/to/datasets/tokyo_xs/test --test_path /path/to/datasets/tokyo_xs/test
+> python main.py --train_path data/gsv_xs/train/london --val_path data/tokyo_xs/test --test_path data/tokyo_xs/test
+> --num_workers 2
 
 
 ## Usage on Colab
