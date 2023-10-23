@@ -145,10 +145,17 @@ if __name__ == '__main__':
         mode='max'
     )
 
+    if torch.cuda.is_available():
+        accelerator = 'gpu'
+        devices = [0]
+    else:
+        accelerator = None  # 'None' or 'cpu' can be used for CPU training
+        devices = None  # No device IDs are needed for CPU training
+
     # Instantiate a PyTorch Lightning trainer with specified parameters and callbacks
     trainer = pl.Trainer(
-        accelerator='gpu',  # Use GPU acceleration
-        devices=[0],  # Specify GPU device IDs
+        accelerator=accelerator,  # Use GPU acceleration if available, otherwise use CPU
+        devices=devices,  # Specify GPU device IDs if available, otherwise leave as None
         default_root_dir='./LOGS',  # Set logging directory
         num_sanity_val_steps=0,  # Disable initial sanity check validation
         precision=16,  # Use half-precision floating point (float16)
