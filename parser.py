@@ -15,7 +15,6 @@ def parse_arguments():
                         help="stop when training reaches max_epochs")
     parser.add_argument("--num_workers", type=int, default=8,
                         help="number of processes to use for data loading / preprocessing")
-
     # Architecture parameters
     parser.add_argument("--descriptors_dim", type=int, default=512,
                         help="dimensionality of the output descriptors")
@@ -27,7 +26,6 @@ def parse_arguments():
     parser.add_argument("--save_only_wrong_preds", action="store_true",
                         help="When saving preds (if num_preds_to_save != 0) save only "
                         "preds for difficult queries, i.e. with uncorrect first prediction")
-
     # Paths parameters
     parser.add_argument("--train_path", type=str, default="data/gsv_xs/train",
                         help="path to train set")
