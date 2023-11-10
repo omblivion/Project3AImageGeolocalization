@@ -59,7 +59,7 @@ class LightningModel(pl.LightningModule):
     def inference_step(self, batch):  # Method for a single inference step
         images, _ = batch  # Unpack batch into images and discard labels
         descriptors = self(images)  # Forward pass to get descriptors
-        return descriptors.cpu().numpy().astype(np.float32)  # Convert descriptors to numpy array and return
+        return descriptors.cpu().numpy().astype(np.float16)  # Convert descriptors to numpy array and return
 
     # Methods for validation and test steps, which call the inference_step method
     def validation_step(self, batch, batch_idx):
@@ -136,6 +136,7 @@ if __name__ == '__main__':
                            args.save_only_wrong_preds)
 
     # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
+    # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
     checkpoint_cb = ModelCheckpoint(
         monitor='R@1',
         filename='_epoch({epoch:02d})_step({step:04d})_R@1[{val/R@1:.4f}]_R@5[{val/R@5:.4f}]',
@@ -147,23 +148,24 @@ if __name__ == '__main__':
 
     if torch.cuda.is_available():
         accelerator = 'gpu'
-        devices = [0]
+        devices = 1  # Assuming you want to use 1 GPU
+        precision = 16  # Use 16-bit precision on GPU
     else:
-        accelerator = None  # 'None' or 'cpu' can be used for CPU training
+        accelerator = 'cpu'
         devices = None  # No device IDs are needed for CPU training
+        precision = 32  # Use full precision on CPU
 
-    # Instantiate a PyTorch Lightning trainer with specified parameters and callbacks
     trainer = pl.Trainer(
-        accelerator=accelerator,  # Use GPU acceleration if available, otherwise use CPU
-        devices=devices,  # Specify GPU device IDs if available, otherwise leave as None
-        default_root_dir='./LOGS',  # Set logging directory
-        num_sanity_val_steps=0,  # Disable initial sanity check validation
-        precision=16,  # Use half-precision floating point (float16)
-        max_epochs=args.max_epochs,  # Set maximum number of training epochs
-        check_val_every_n_epoch=1,  # Validate the model every epoch
-        callbacks=[checkpoint_cb],  # Set callbacks (e.g., model checkpointing)
-        reload_dataloaders_every_n_epochs=1,  # Reload datasets every epoch to shuffle data
-        log_every_n_steps=20,  # Log metrics every 20 steps
+        accelerator=accelerator,
+        devices=devices,
+        default_root_dir='./LOGS',
+        num_sanity_val_steps=0,
+        precision=precision,  # Set precision based on whether GPU is available
+        max_epochs=args.max_epochs,
+        check_val_every_n_epoch=1,
+        callbacks=[checkpoint_cb],
+        reload_dataloaders_every_n_epochs=1,
+        log_every_n_steps=20,
     )
 
     # Validate the model using the validation data loader
