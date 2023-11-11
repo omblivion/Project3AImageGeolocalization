@@ -124,8 +124,58 @@ def get_datasets_and_dataloaders(args):
     return train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader
 
 
+def print_divider(title):
+    """
+    Print a fancy divider with a title centered.
+    """
+    divider_line = '+' + '-' * 78 + '+'
+    title_line = f"| {' ':<{(76 - len(title)) // 2}}{title}{' ':>{(76 - len(title)) // 2}} |"
+    print(divider_line)
+    print(title_line)
+    print(divider_line)
+
+
+def print_program_config(args, model):
+    """
+    Print the configuration settings for the program, including model details.
+    """
+    print_divider("Program Configuration")
+    print(f"Max Epochs: {args.max_epochs}")
+    print(f"Training Path: {args.train_path}")
+    print(f"Validation Path: {args.val_path}")
+    print(f"Test Path: {args.test_path}")
+    print(f"Batch Size: {args.batch_size}")
+    print(f"Number of Workers: {args.num_workers}")
+    print(f"Descriptor Dimension: {args.descriptors_dim}")
+    print(f"Number of Predictions to Save: {args.num_preds_to_save}")
+    print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
+    print(f"Image per Place: {args.img_per_place}")
+    print(f"Minimum Image per Place: {args.min_img_per_place}")
+    print_divider("Model Configuration")
+    print(f"Model Architecture: {model.model.__class__.__name__}")
+    print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
+    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
+    print(f"Loss Function: {model.loss_fn.__class__.__name__}")
+    print_divider("End of Configuration")
+
+
 # Main execution block
 if __name__ == '__main__':
+    print("""
+ .----------------. .----------------. .----------------. .----------------. .----------------. 
+| .--------------. | .--------------. | .--------------. | .--------------. | .--------------. |
+| | ____    ____ | | |   _____      | | |    ___       | | |  ________    | | |   _____      | |
+| ||_   \  /   _|| | |  |_   _|     | | |  .' _ '.     | | | |_   ___ `.  | | |  |_   _|     | |
+| |  |   \/   |  | | |    | |       | | |  | (_) '___  | | |   | |   `. \ | | |    | |       | |
+| |  | |\  /| |  | | |    | |   _   | | |  .`___'/ _/  | | |   | |    | | | | |    | |   _   | |
+| | _| |_\/_| |_ | | |   _| |__/ |  | | | | (___)  \_  | | |  _| |___.' / | | |   _| |__/ |  | |
+| ||_____||_____|| | |  |________|  | | | `._____.\__| | | | |________.'  | | |  |________|  | |
+| |              | | |              | | |              | | |              | | |              | |
+| '--------------' | '--------------' | '--------------' | '--------------' | '--------------' |
+ '----------------' '----------------' '----------------' '----------------' '----------------' 
+    """)
+    print("Welcome to the ML&DL Project! Please wait while the program is starting up...\n")
+
     # Parse command line arguments
     args = parser.parse_arguments()
 
@@ -139,6 +189,7 @@ if __name__ == '__main__':
     model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
                            args.save_only_wrong_preds)
     print("Model initialized.")
+    print_program_config(args, model)
 
     # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
     # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
