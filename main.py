@@ -54,6 +54,7 @@ class LightningModel(pl.LightningModule):
         loss = self.loss_function(descriptors, labels)  # Compute loss
 
         self.log('loss', loss.item(), logger=True)  # Log the loss value
+        print(f'Training Step {batch_idx}, Loss: {loss.item()}')
         return {'loss': loss}  # Return the loss value
 
     def inference_step(self, batch):  # Method for a single inference step
@@ -128,12 +129,16 @@ if __name__ == '__main__':
     # Parse command line arguments
     args = parser.parse_arguments()
 
+    print("Preparing datasets and dataloaders...")
     # Get datasets and data loaders
     train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = get_datasets_and_dataloaders(args)
+    print("Datasets and dataloaders ready.")
 
+    print("Initializing the model...")
     # Instantiate a Lightning model with given parameters
     model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
                            args.save_only_wrong_preds)
+    print("Model initialized.")
 
     # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
     # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
@@ -150,10 +155,12 @@ if __name__ == '__main__':
         accelerator = 'gpu'
         devices = 1  # Assuming you want to use 1 GPU
         precision = 16  # Use 16-bit precision on GPU
+        print("Trainer configured with GPU.")
     else:
         accelerator = 'cpu'
         devices = None  # No device IDs are needed for CPU training
         precision = 32  # Use full precision on CPU
+        print("Trainer configured with CPU.")
 
     trainer = pl.Trainer(
         accelerator=accelerator,
@@ -168,9 +175,17 @@ if __name__ == '__main__':
         log_every_n_steps=20,
     )
 
+    print("Starting validation...")
     # Validate the model using the validation data loader
     trainer.validate(model=model, dataloaders=val_loader)
+    print("Validation completed.")
+
+    print("Starting training...")
     # Train the model using the training data loader and validate using the validation data loader
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    print("Training completed.")
+
     # Test the model using the testing data loader
+    print("Starting testing...")
     trainer.test(model=model, dataloaders=test_loader)
+    print("Testing completed.")
