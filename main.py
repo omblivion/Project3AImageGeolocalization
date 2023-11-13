@@ -1,4 +1,6 @@
 # Importing necessary libraries and modules
+import time
+
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -178,6 +180,7 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     args = parser.parse_arguments()
+    training_start_time = time.time()
 
     print("Preparing datasets and dataloaders...")
     # Get datasets and data loaders
@@ -224,6 +227,7 @@ if __name__ == '__main__':
         callbacks=[checkpoint_cb],
         reload_dataloaders_every_n_epochs=1,
         log_every_n_steps=20,
+        enable_progress_bar=False
     )
 
     print("Starting validation...")
@@ -234,9 +238,20 @@ if __name__ == '__main__':
     print("Starting training...")
     # Train the model using the training data loader and validate using the validation data loader
     trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    # Calculate and print training time
+    training_end_time = time.time()
+    training_duration = training_end_time - training_start_time
     print("Training completed.")
 
-    # Test the model using the testing data loader
+    # Test the model and print the summary
     print("Starting testing...")
     trainer.test(model=model, dataloaders=test_loader)
-    print("Testing completed.")
+    testing_end_time = time.time()
+    testing_duration = testing_end_time - training_end_time
+    print(f"Testing completed in {testing_duration:.2f} seconds.")
+
+    # Print a summary of the model's performance
+    print("\nModel Performance Summary:")
+    print(f"Training Duration: {training_duration:.2f} seconds")
+    print(f"Testing Duration: {testing_duration:.2f} seconds")
+    print_program_config(args, model)
