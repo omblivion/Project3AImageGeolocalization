@@ -1,4 +1,5 @@
 # Importing necessary libraries and modules
+import datetime
 import time
 
 import numpy as np
@@ -138,10 +139,15 @@ def print_divider(title):
 
 
 def print_program_config(args, model):
+    current_time_rome = (
+                datetime.datetime.utcnow() + datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1)).strftime(
+        '%Y-%m-%d %H:%M:%S CET/CEST')
     """
     Print the configuration settings for the program, including model details.
     """
+
     print_divider("Program Configuration")
+    print(f"Current Date and Time: {current_time_rome}")
     print(f"Max Epochs: {args.max_epochs}")
     print(f"Training Path: {args.train_path}")
     print(f"Validation Path: {args.val_path}")
