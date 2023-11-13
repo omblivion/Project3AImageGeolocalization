@@ -57,8 +57,11 @@ class LightningModel(pl.LightningModule):
         loss = self.loss_function(descriptors, labels)  # Compute loss
 
         self.log('loss', loss.item(), logger=True)  # Log the loss value
-        print(f'Training Step {batch_idx}, Loss: {loss.item()}')
+        # print(f'Training Step {batch_idx}, Loss: {loss.item()}')
         return {'loss': loss}  # Return the loss value
+
+    def training_epoch_end(self, outputs):
+        print(f'Epoch {self.current_epoch + 1} of {self.trainer.max_epochs} complete.')
 
     def inference_step(self, batch):  # Method for a single inference step
         images, _ = batch  # Unpack batch into images and discard labels
