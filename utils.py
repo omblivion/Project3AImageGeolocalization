@@ -4,6 +4,7 @@ from typing import Tuple
 
 import faiss
 import numpy as np
+import torch
 from torch.utils.data import Dataset
 
 # Import custom visualization module
@@ -59,3 +60,43 @@ def compute_recalls(eval_ds: Dataset, queries_descriptors: np.ndarray, database_
 
     # Return the recall values and their string representation
     return recalls, recalls_str
+
+
+def print_divider(title):
+    """
+    Print a fancy divider with a title centered.
+    """
+    divider_line = '+' + '-' * 78 + '+'
+    title_line = f"| {' ':<{(76 - len(title)) // 2}}{title}{' ':>{(76 - len(title)) // 2}} |"
+    print(divider_line)
+    print(title_line)
+    print(divider_line)
+
+
+def print_weights_summary(initial_weights, final_weights):
+    print_divider("Model Weights Summary")
+
+    changed_weights = 0
+    unchanged_weights = 0
+
+    for name in initial_weights.keys():
+        initial_weight = initial_weights[name]
+        final_weight = final_weights[name]
+        initial_mean, initial_std = initial_weight.mean().item(), initial_weight.std().item()
+        final_mean, final_std = final_weight.mean().item(), final_weight.std().item()
+
+        if not torch.equal(initial_weight, final_weight):
+            weights_status = "CHANGED"
+            changed_weights += 1
+        else:
+            weights_status = "UNCHANGED"
+            unchanged_weights += 1
+
+        print(f"Layer: {name}")
+        print(f"    Status: {weights_status}")
+        print(f"    Initial Mean / Std: {initial_mean:.4e} / {initial_std:.4e}")
+        print(f"    Final Mean / Std: {final_mean:.4e} / {final_std:.4e}")
+
+    print(f"Total changed weights: {changed_weights}")
+    print(f"Total unchanged weights: {unchanged_weights}")
+    print_divider("End of Model Weights Summary")

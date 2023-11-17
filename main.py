@@ -130,26 +130,15 @@ def get_datasets_and_dataloaders(args):
     return train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader
 
 
-def print_divider(title):
-    """
-    Print a fancy divider with a title centered.
-    """
-    divider_line = '+' + '-' * 78 + '+'
-    title_line = f"| {' ':<{(76 - len(title)) // 2}}{title}{' ':>{(76 - len(title)) // 2}} |"
-    print(divider_line)
-    print(title_line)
-    print(divider_line)
-
-
 def print_program_config(args, model):
     current_time_rome = (
-                datetime.datetime.utcnow() + datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1)).strftime(
+            datetime.datetime.utcnow() + datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1)).strftime(
         '%Y-%m-%d %H:%M:%S CET/CEST')
     """
     Print the configuration settings for the program, including model details.
     """
 
-    print_divider("Program Configuration")
+    utils.print_divider("Program Configuration")
     print(f"Current Date and Time: {current_time_rome}")
     print(f"Max Epochs: {args.max_epochs}")
     print(f"Training Path: {args.train_path}")
@@ -162,12 +151,12 @@ def print_program_config(args, model):
     print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
     print(f"Image per Place: {args.img_per_place}")
     print(f"Minimum Image per Place: {args.min_img_per_place}")
-    print_divider("Model Configuration")
+    utils.print_divider("Model Configuration")
     print(f"Model Architecture: {model.model.__class__.__name__}")
     print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
     print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
     print(f"Loss Function: {model.loss_fn.__class__.__name__}")
-    print_divider("End of Configuration")
+    utils.print_divider("End of Configuration")
 
 
 # Main execution block
@@ -200,6 +189,7 @@ if __name__ == '__main__':
     # Instantiate a Lightning model with given parameters
     model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
                            args.save_only_wrong_preds)
+    initial_weights = {name: param.clone() for name, param in model.named_parameters()}
     print("Model initialized.")
     print_program_config(args, model)
 
@@ -250,6 +240,7 @@ if __name__ == '__main__':
     # Calculate and print training time
     training_end_time = time.time()
     training_duration = training_end_time - training_start_time
+    final_weights = {name: param.clone() for name, param in model.named_parameters()}
     print("Training completed.")
 
     # Test the model and print the summary
@@ -264,3 +255,4 @@ if __name__ == '__main__':
     print(f"Training Duration: {training_duration:.2f} seconds")
     print(f"Testing Duration: {testing_duration:.2f} seconds")
     print_program_config(args, model)
+    utils.print_weights_summary(initial_weights, final_weights)
