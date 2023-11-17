@@ -82,12 +82,21 @@ def print_weights_summary(initial_weights, final_weights):
 
     changed_weights = 0
     unchanged_weights = 0
+    initial_means = []
+    initial_stds = []
+    final_means = []
+    final_stds = []
 
     for name in initial_weights.keys():
         initial_weight = initial_weights[name]
         final_weight = final_weights[name]
         initial_mean, initial_std = initial_weight.mean().item(), initial_weight.std().item()
         final_mean, final_std = final_weight.mean().item(), final_weight.std().item()
+
+        initial_means.append(initial_mean)
+        initial_stds.append(initial_std)
+        final_means.append(final_mean)
+        final_stds.append(final_std)
 
         if not torch.equal(initial_weight, final_weight):
             weights_status = "CHANGED"
@@ -99,7 +108,16 @@ def print_weights_summary(initial_weights, final_weights):
         row = f"{name:<40} {weights_status:<10} {initial_mean:<15.4e} {initial_std:<15.4e} {final_mean:<15.4e} {final_std:<15.4e}"
         print(row)
 
+    general_initial_mean = sum(initial_means) / len(initial_means)
+    general_initial_std = sum(initial_stds) / len(initial_stds)
+    general_final_mean = sum(final_means) / len(final_means)
+    general_final_std = sum(final_stds) / len(final_stds)
+
     summary = f"\nTotal changed weights: {changed_weights}\nTotal unchanged weights: {unchanged_weights}"
+    general_summary = f"General Initial Mean / Std: {general_initial_mean:.4e} / {general_initial_std:.4e}\n"
+    general_summary += f"General Final Mean / Std: {general_final_mean:.4e} / {general_final_std:.4e}"
+
     print("-" * len(header))
     print(summary)
+    print(general_summary)
     print_divider("End of Model Weights Summary")
