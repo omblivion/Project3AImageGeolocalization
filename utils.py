@@ -76,6 +76,10 @@ def print_divider(title):
 def print_weights_summary(initial_weights, final_weights):
     print_divider("Model Weights Summary")
 
+    header = f"{'Layer':<40} {'Status':<10} {'Initial Mean':<15} {'Initial Std':<15} {'Final Mean':<15} {'Final Std':<15}"
+    print(header)
+    print("-" * len(header))
+
     changed_weights = 0
     unchanged_weights = 0
 
@@ -92,11 +96,10 @@ def print_weights_summary(initial_weights, final_weights):
             weights_status = "UNCHANGED"
             unchanged_weights += 1
 
-        print(f"Layer: {name}")
-        print(f"    Status: {weights_status}")
-        print(f"    Initial Mean / Std: {initial_mean:.4e} / {initial_std:.4e}")
-        print(f"    Final Mean / Std: {final_mean:.4e} / {final_std:.4e}")
+        row = f"{name:<40} {weights_status:<10} {initial_mean:<15.4e} {initial_std:<15.4e} {final_mean:<15.4e} {final_std:<15.4e}"
+        print(row)
 
-    print(f"Total changed weights: {changed_weights}")
-    print(f"Total unchanged weights: {unchanged_weights}")
+    summary = f"\nTotal changed weights: {changed_weights}\nTotal unchanged weights: {unchanged_weights}"
+    print("-" * len(header))
+    print(summary)
     print_divider("End of Model Weights Summary")
