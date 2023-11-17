@@ -1,5 +1,4 @@
 # Importing necessary libraries and modules
-import datetime
 import time
 
 import numpy as np
@@ -130,35 +129,6 @@ def get_datasets_and_dataloaders(args):
     return train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader
 
 
-def print_program_config(args, model):
-    current_time_rome = (
-            datetime.datetime.utcnow() + datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1)).strftime(
-        '%Y-%m-%d %H:%M:%S CET/CEST')
-    """
-    Print the configuration settings for the program, including model details.
-    """
-
-    utils.print_divider("Program Configuration")
-    print(f"Current Date and Time: {current_time_rome}")
-    print(f"Max Epochs: {args.max_epochs}")
-    print(f"Training Path: {args.train_path}")
-    print(f"Validation Path: {args.val_path}")
-    print(f"Test Path: {args.test_path}")
-    print(f"Batch Size: {args.batch_size}")
-    print(f"Number of Workers: {args.num_workers}")
-    print(f"Descriptor Dimension: {args.descriptors_dim}")
-    print(f"Number of Predictions to Save: {args.num_preds_to_save}")
-    print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
-    print(f"Image per Place: {args.img_per_place}")
-    print(f"Minimum Image per Place: {args.min_img_per_place}")
-    utils.print_divider("Model Configuration")
-    print(f"Model Architecture: {model.model.__class__.__name__}")
-    print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
-    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
-    print(f"Loss Function: {model.loss_fn.__class__.__name__}")
-    utils.print_divider("End of Configuration")
-
-
 # Main execution block
 if __name__ == '__main__':
     print("""
@@ -178,20 +148,38 @@ if __name__ == '__main__':
 
     # Parse command line arguments
     args = parser.parse_arguments()
-    training_start_time = time.time()
 
-    print("Preparing datasets and dataloaders...")
-    # Get datasets and data loaders
-    train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = get_datasets_and_dataloaders(args)
-    print("Datasets and dataloaders ready.")
+    model = None
+    should_train = True
 
-    print("Initializing the model...")
-    # Instantiate a Lightning model with given parameters
-    model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
-                           args.save_only_wrong_preds)
-    initial_weights = {name: param.clone() for name, param in model.named_parameters()}
-    print("Model initialized.")
-    print_program_config(args, model)
+    # Check if a checkpoint path was provided for evaluation
+    if args.checkpoint_path == 'latest':
+        # Load the latest checkpoint from the logs directory
+        model, checkpoint_path = utils.load_latest_checkpoint_model()
+        print(f"Loaded model from latest checkpoint: {checkpoint_path}")
+        should_train = False
+    elif args.checkpoint_path:
+        # Load the model from the specified checkpoint
+        model = LightningModel.load_from_checkpoint(args.checkpoint_path)
+        print(f"Loaded model from checkpoint: {args.checkpoint_path}")
+        should_train = False
+    else:
+        # Initialize the model for training from scratch
+        print("No checkpoint provided, initializing model for training...")
+        print("Preparing datasets and dataloaders...")
+        # Get datasets and data loaders
+        train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = get_datasets_and_dataloaders(
+            args)
+        print("Datasets and dataloaders ready.")
+
+        print("Initializing the model...")
+        # Instantiate a Lightning model with given parameters
+        model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
+                               args.save_only_wrong_preds)
+
+        initial_weights = {name: param.clone() for name, param in model.named_parameters()}
+    print("Model loaded successfully")
+    utils.print_program_config(args, model)
 
     # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
     # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
@@ -228,31 +216,46 @@ if __name__ == '__main__':
         log_every_n_steps=20,
         enable_progress_bar=False
     )
+    print("Trainer initialized, all ready.")
 
     print("Starting validation...")
     # Validate the model using the validation data loader
     trainer.validate(model=model, dataloaders=val_loader)
     print("Validation completed.")
 
-    print("Starting training...")
-    # Train the model using the training data loader and validate using the validation data loader
-    trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
-    # Calculate and print training time
-    training_end_time = time.time()
-    training_duration = training_end_time - training_start_time
-    final_weights = {name: param.clone() for name, param in model.named_parameters()}
-    print("Training completed.")
+    if should_train:
+        training_start_time = time.time()
+        print("Starting training...")
+        # Train the model using the training data loader and validate using the validation data loader
+        trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+        # Calculate and print training time
+        training_end_time = time.time()
+        training_duration = training_end_time - training_start_time
+        final_weights = {name: param.clone() for name, param in model.named_parameters()}
+        print("Training completed.")
 
-    # Test the model and print the summary
-    print("Starting testing...")
-    trainer.test(model=model, dataloaders=test_loader)
-    testing_end_time = time.time()
-    testing_duration = testing_end_time - training_end_time
-    print(f"Testing completed in {testing_duration:.2f} seconds.")
+        # Test the model and print the summary
+        print("Starting testing...")
+        trainer.test(model=model, dataloaders=test_loader)
+        testing_end_time = time.time()
+        testing_duration = testing_end_time - training_end_time
+        print(f"Testing completed in {testing_duration:.2f} seconds.")
 
-    # Print a summary of the model's performance
-    print("\nModel Performance Summary:")
-    print(f"Training Duration: {training_duration:.2f} seconds")
-    print(f"Testing Duration: {testing_duration:.2f} seconds")
-    print_program_config(args, model)
-    utils.print_weights_summary(initial_weights, final_weights)
+        # Print a summary of the model's performance
+        print("\nModel Performance Summary:")
+        print(f"Training Duration: {training_duration:.2f} seconds")
+        print(f"Testing Duration: {testing_duration:.2f} seconds")
+        utils.print_program_config(args, model)
+        utils.print_weights_summary(initial_weights, final_weights)
+    else:
+        # Evaluate the model
+        print("Evaluating the model...")
+        trainer.validate(model=model, dataloaders=val_loader)
+        print("Validation completed.")
+        print("Starting testing...")
+        trainer.test(model=model, dataloaders=test_loader)
+        print("Testing completed.")
+
+        # Print a summary of the model's performance
+        print("\nModel Performance Summary:")
+        utils.print_program_config(args, model)

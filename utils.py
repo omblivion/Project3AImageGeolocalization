@@ -1,14 +1,20 @@
 # Import necessary libraries and modules
+import datetime
+import glob
 import logging
+import os
+import time
 from typing import Tuple
 
 import faiss
 import numpy as np
 import torch
+import torchvision
 from torch.utils.data import Dataset
 
 # Import custom visualization module
 import visualizations
+from main import LightningModel
 
 # Define a list of recall values for evaluation
 RECALL_VALUES = [1, 5, 10, 20]
@@ -121,3 +127,44 @@ def print_weights_summary(initial_weights, final_weights):
     print(summary)
     print(general_summary)
     print_divider("End of Model Weights Summary")
+
+
+def print_program_config(args, model):
+    current_time_rome = (
+            datetime.datetime.utcnow() + datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1)).strftime(
+        '%Y-%m-%d %H:%M:%S CET/CEST')
+    """
+    Print the configuration settings for the program, including model details.
+    """
+
+    print_divider("Program Configuration")
+    print(f"Current Date and Time: {current_time_rome}")
+    print(f"Max Epochs: {args.max_epochs}")
+    print(f"Training Path: {args.train_path}")
+    print(f"Validation Path: {args.val_path}")
+    print(f"Test Path: {args.test_path}")
+    print(f"Batch Size: {args.batch_size}")
+    print(f"Number of Workers: {args.num_workers}")
+    print(f"Descriptor Dimension: {args.descriptors_dim}")
+    print(f"Number of Predictions to Save: {args.num_preds_to_save}")
+    print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
+    print(f"Image per Place: {args.img_per_place}")
+    print(f"Minimum Image per Place: {args.min_img_per_place}")
+    print_divider("Model Configuration")
+    print(f"Model Architecture: {model.model.__class__.__name__}")
+    print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
+    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
+    print(f"Loss Function: {model.loss_fn.__class__.__name__}")
+    print_divider("End of Configuration")
+
+
+def load_latest_checkpoint_model():
+    # Specify the directory where checkpoints are saved
+    checkpoint_dir = './LOGS'
+    # List all the .ckpt files in the directory
+    list_of_files = glob.glob(os.path.join(checkpoint_dir, '*.ckpt'))
+    # Get the most recent checkpoint file
+    latest_checkpoint = max(list_of_files, key=os.path.getctime)
+    # Load the model from the latest checkpoint
+    model = LightningModel.load_from_checkpoint(latest_checkpoint)
+    return model, latest_checkpoint
