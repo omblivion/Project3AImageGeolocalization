@@ -86,7 +86,7 @@ class LightningModel(pl.LightningModule):
         # Compute recalls for the dataset
         recalls, recalls_str = utils.compute_recalls(
             inference_dataset, queries_descriptors, database_descriptors,
-            trainer.logger.log_dir, num_preds_to_save, self.save_only_wrong_preds
+            self.trainer.logger.log_dir, num_preds_to_save, self.save_only_wrong_preds
         )
         print(recalls_str)  # Print recall values
         # Log recall values
