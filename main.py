@@ -9,27 +9,6 @@ import parser  # Argument parser
 import utils  # Custom utility functions
 from lightningModel import LightningModel, get_datasets_and_dataloaders
 
-
-def model_checkpoint_setup():
-    # Format the paths to include them in the filename (remove slashes and dots)
-    formatted_train_path = args.train_path.replace('/', '_').replace('.', '')
-    formatted_val_path = args.val_path.replace('/', '_').replace('.', '')
-    formatted_test_path = args.test_path.replace('/', '_').replace('.', '')
-    # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
-    # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
-    checkpoint_cb = ModelCheckpoint(
-        monitor='R@1',
-        # Include the formatted dataset paths in the filename
-        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_'
-                 f'epoch({{epoch:02d}})_step({{step:04d}})_R@1[{{val/R@1:.4f}}]_R@5[{{val/R@5:.4f}}]',
-        auto_insert_metric_name=False,
-        save_weights_only=True,
-        save_top_k=3,
-        mode='max'
-    )
-    return checkpoint_cb
-
-
 # Main execution block
 if __name__ == '__main__':
     print("""
@@ -82,7 +61,21 @@ if __name__ == '__main__':
     print("Model loaded successfully")
     utils.print_program_config(args, model)
 
-    checkpoint_cb = model_checkpoint_setup()
+    # Format the paths to include them in the filename (remove slashes and dots)
+    formatted_train_path = args.train_path.replace('/', '_').replace('.', '')
+    formatted_val_path = args.val_path.replace('/', '_').replace('.', '')
+    formatted_test_path = args.test_path.replace('/', '_').replace('.', '')
+    # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
+    # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
+    checkpoint_cb = ModelCheckpoint(
+        monitor='R@1',
+        # Include the formatted dataset paths in the filename
+        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_epoch({{epoch:02d}})_step({{step:04d}})_R@1[{{val/R@1:.4f}}]_R@5[{{val/R@5:.4f}}]',
+        auto_insert_metric_name=False,
+        save_weights_only=True,
+        save_top_k=3,
+        mode='max'
+    )
 
     if torch.cuda.is_available():
         accelerator = 'gpu'
