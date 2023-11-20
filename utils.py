@@ -130,12 +130,10 @@ def print_weights_summary(initial_weights, final_weights):
 
 
 def print_program_config(args, model):
-    current_time_rome = (
-            datetime.datetime.utcnow() + datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1)).strftime(
-        '%Y-%m-%d %H:%M:%S CET/CEST')
-    """
-    Print the configuration settings for the program, including model details.
-    """
+    current_time_rome = ((
+                                 datetime.datetime.utcnow() +
+                                 datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1))
+                         .strftime('%Y-%m-%d %H:%M:%S CET/CEST'))
 
     print_divider("Program Configuration")
     print(f"Current Date and Time: {current_time_rome}")
@@ -150,6 +148,15 @@ def print_program_config(args, model):
     print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
     print(f"Image per Place: {args.img_per_place}")
     print(f"Minimum Image per Place: {args.min_img_per_place}")
+
+    # Check if the testing argument is provided and print relevant information
+    if hasattr(args, 'test') and args.test:
+        testing_status = f"Model tested from checkpoint: {args.test}" if args.test != 'latest' else "Model tested from the latest checkpoint."
+    else:
+        testing_status = "Model not in testing mode, training from scratch."
+
+    print(testing_status)
+
     print_divider("Model Configuration")
     print(f"Model Architecture: {model.model.__class__.__name__}")
     print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
