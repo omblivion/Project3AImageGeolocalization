@@ -40,7 +40,7 @@ if __name__ == '__main__':
         should_train = False
     elif args.test:
         # Load the model from the specified checkpoint
-        model = utils.load_model_from_checkpoint(args.test, val_dataset, test_dataset)
+        model, checkpoint_path = utils.load_model_from_checkpoint(args.test, val_dataset, test_dataset)
         print(f"Loaded model from checkpoint: {args.test}")
         should_train = False
     else:

@@ -10,7 +10,6 @@ from typing import Tuple
 import faiss
 import numpy as np
 import torch
-import torchvision
 from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import Dataset
 
@@ -131,7 +130,7 @@ def print_weights_summary(initial_weights, final_weights):
     print_divider("End of Model Weights Summary")
 
 
-def print_program_config(args, model):
+def print_program_config(args, model_instance):
     current_time_rome = ((
                                  datetime.datetime.utcnow() +
                                  datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1))
@@ -159,12 +158,11 @@ def print_program_config(args, model):
 
     print(testing_status)
 
-    if model and model.model:
-        print_divider("Model Configuration")
-        print(f"Model Architecture: {model.model.__class__.__name__}")
-        print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
-        print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
-        print(f"Loss Function: {model.loss_fn.__class__.__name__}")
+    print_divider("Model Configuration")
+    print(f"Model Architecture: {model_instance.model.__class__.__name__}")
+    print(f"Pretrained: {'Yes' if model_instance.model.fc.in_features else 'No'}")  # Example check for pretrained
+    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9")
+    print(f"Loss Function: {model_instance.loss_fn.__class__.__name__}")
     print_divider("End of Configuration")
 
 
