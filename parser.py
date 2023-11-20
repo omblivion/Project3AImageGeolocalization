@@ -32,7 +32,7 @@ def parse_arguments():
                         help="path to val set (must contain database and queries)")
     parser.add_argument("--test_path", type=str, default="data/sf_xs/test",
                         help="path to test set (must contain database and queries)")
-    parser.add_argument("--checkpoint_path", type=str, default=None,
+    parser.add_argument("--test", type=str, default=None,
                         help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
 
     args = parser.parse_args()

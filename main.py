@@ -33,12 +33,12 @@ if __name__ == '__main__':
     should_train = True
 
     # Check if a checkpoint path was provided for evaluation
-    if args.checkpoint_path == 'latest':
+    if args.test == 'latest':
         # Load the latest checkpoint from the logs directory
         model, checkpoint_path = utils.load_latest_checkpoint_model()
         print(f"Loaded model from latest checkpoint: {checkpoint_path}")
         should_train = False
-    elif args.checkpoint_path:
+    elif args.test:
         # Load the model from the specified checkpoint
         model = LightningModel.load_from_checkpoint(args.checkpoint_path)
         print(f"Loaded model from checkpoint: {args.checkpoint_path}")
@@ -56,8 +56,8 @@ if __name__ == '__main__':
         # Instantiate a Lightning model with given parameters
         model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
                                args.save_only_wrong_preds)
-
         initial_weights = {name: param.clone() for name, param in model.named_parameters()}
+
     print("Model loaded successfully")
     utils.print_program_config(args, model)
 
@@ -69,12 +69,11 @@ if __name__ == '__main__':
     # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
     checkpoint_cb = ModelCheckpoint(
         monitor='R@1',
-        # Include the formatted dataset paths in the filename
-        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_epoch({{epoch:02d}})_step({{step:04d}})_R@1[{{val/R@1:.4f}}]_R@5[{{val/R@5:.4f}}]',
-        auto_insert_metric_name=False,
+        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_epoch({{epoch:02d}})_step({{global_step:04d}})_R@1[{{R@1:.4f}}]',
         save_weights_only=True,
         save_top_k=3,
-        mode='max'
+        mode='max',
+        every_n_train_steps=1,  # Save the checkpoint at every training step
     )
 
     if torch.cuda.is_available():
