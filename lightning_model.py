@@ -93,12 +93,13 @@ class CustomLightningModel(pl.LightningModule):
         self.log('R@1', recalls[0], prog_bar=False, logger=True)
         self.log('R@5', recalls[1], prog_bar=False, logger=True)
 
-    def load_model_from_checkpoint(self, checkpoint_path, val_dataset, test_dataset):
+    @classmethod
+    def load_model_from_checkpoint(cls, checkpoint_path, val_dataset, test_dataset):
         # Load the checkpoint
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
         # Instantiate the model with the checkpoint hyperparameters
-        model = self(val_dataset=val_dataset, test_dataset=test_dataset, **checkpoint['hyper_parameters'])
+        model = cls(val_dataset=val_dataset, test_dataset=test_dataset, **checkpoint['hyper_parameters'])
 
         # Apply the loaded state_dict to the model instance
         model.load_state_dict(checkpoint['state_dict'])
