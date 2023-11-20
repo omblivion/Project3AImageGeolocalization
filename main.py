@@ -41,8 +41,8 @@ if __name__ == '__main__':
         should_train = False
     elif args.test:
         # Load the model from the specified checkpoint
-        model = CustomLightningModel.load_from_checkpoint(args.checkpoint_path)
-        print(f"Loaded model from checkpoint: {args.checkpoint_path}")
+        model = utils.load_model_from_checkpoint(args.test, val_dataset, test_dataset)
+        print(f"Loaded model from checkpoint: {args.test}")
         should_train = False
     else:
         # Initialize the model for training from scratch

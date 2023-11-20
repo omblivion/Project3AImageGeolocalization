@@ -193,3 +193,22 @@ def load_latest_checkpoint_model(val_dataset, test_dataset):
     model = CustomLightningModel.load_model_from_checkpoint(latest_checkpoint, val_dataset, test_dataset)
 
     return model, latest_checkpoint
+
+
+def load_model_from_checkpoint(checkpoint_path, val_dataset, test_dataset):
+    """
+    Load a model from the specified checkpoint file.
+
+    :param checkpoint_path: Path to the checkpoint file provided by the user.
+    :param val_dataset: The validation dataset to use with the model.
+    :param test_dataset: The test dataset to use with the model.
+    :return: A tuple of the loaded model and the checkpoint path used.
+    """
+    # Ensure the checkpoint file exists
+    if not os.path.isfile(checkpoint_path):
+        raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
+
+    # Load the model from the specified checkpoint
+    model = CustomLightningModel.load_model_from_checkpoint(checkpoint_path, val_dataset, test_dataset)
+
+    return model, checkpoint_path
