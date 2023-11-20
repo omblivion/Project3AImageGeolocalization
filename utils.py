@@ -161,25 +161,28 @@ def print_program_config(args, model):
 def load_latest_checkpoint_model():
     # Specify the directory where checkpoints are saved
     checkpoint_dir = './LOGS/lightning_logs/'
-    # Search for all the subdirectories in the checkpoint directory
+    # Find all the version directories
     version_dirs = glob.glob(os.path.join(checkpoint_dir, 'version_*'))
 
-    # Get the most recent subdirectory
-    latest_version_dir = max(version_dirs, key=os.path.getctime)
+    # Make sure there is at least one version directory
+    if not version_dirs:
+        raise FileNotFoundError(f"No version directories found in {checkpoint_dir}")
 
-    # Now list all the .ckpt files in the most recent subdirectory
-    checkpoint_path = os.path.join(latest_version_dir, 'checkpoints', '*.ckpt')
-    list_of_files = glob.glob(checkpoint_path)
+    # Get the most recent version directory based on creation time
+    latest_version_dir = max(version_dirs, key=os.path.getctime)
+    # Get the path to the checkpoint directory within the latest version directory
+    checkpoint_subdir = os.path.join(latest_version_dir, 'checkpoints')
+    # List all the .ckpt files in the checkpoints subdirectory
+    list_of_files = glob.glob(os.path.join(checkpoint_subdir, '*.ckpt'))
 
     # If there are no checkpoints, raise an informative error
     if not list_of_files:
-        raise FileNotFoundError("No checkpoint files found in the latest version directory.")
+        raise FileNotFoundError(f"No checkpoint files found in {checkpoint_subdir}")
 
     # Get the most recent checkpoint file
     latest_checkpoint = max(list_of_files, key=os.path.getctime)
 
     # Load the model from the latest checkpoint
-    # Ensure that LightningModel is the correct class name for your model
     model = LightningModule.load_from_checkpoint(latest_checkpoint)
 
     return model, latest_checkpoint
