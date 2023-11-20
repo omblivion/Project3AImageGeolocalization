@@ -31,11 +31,12 @@ if __name__ == '__main__':
 
     model = None
     should_train = True
-
+    train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = get_datasets_and_dataloaders(
+        args)
     # Check if a checkpoint path was provided for evaluation
     if args.test == 'latest':
         # Load the latest checkpoint from the logs directory
-        model, checkpoint_path = utils.load_latest_checkpoint_model()
+        model, checkpoint_path = utils.load_latest_checkpoint_model(val_dataset, test_dataset)
         print(f"Loaded model from latest checkpoint: {checkpoint_path}")
         should_train = False
     elif args.test:
@@ -48,8 +49,7 @@ if __name__ == '__main__':
         print("No checkpoint provided, initializing model for training...")
         print("Preparing datasets and dataloaders...")
         # Get datasets and data loaders
-        train_dataset, val_dataset, test_dataset, train_loader, val_loader, test_loader = get_datasets_and_dataloaders(
-            args)
+
         print("Datasets and dataloaders ready.")
 
         print("Initializing the model...")

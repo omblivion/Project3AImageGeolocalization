@@ -93,25 +93,12 @@ class CustomLightningModel(pl.LightningModule):
         self.log('R@1', recalls[0], prog_bar=False, logger=True)
         self.log('R@5', recalls[1], prog_bar=False, logger=True)
 
-    def load_model_from_checkpoint(self, checkpoint_path, val_dataset=None, test_dataset=None):
-        """
-        Custom class method to load the model from a checkpoint file.
-
-        :param checkpoint_path: Path to the checkpoint file.
-        :param val_dataset: Validation dataset, if required by the model.
-        :param test_dataset: Test dataset, if required by the model.
-        :return: An instance of LightningModel with weights loaded from the checkpoint.
-        """
+    def load_model_from_checkpoint(self, checkpoint_path, val_dataset, test_dataset):
         # Load the checkpoint
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
 
-        # Extract the descriptor dimension from the checkpoint's hyperparameters
-        descriptors_dim = checkpoint['hyper_parameters'].get('descriptors_dim', 512)
-        num_preds_to_save = checkpoint['hyper_parameters'].get('num_preds_to_save', 0)
-        save_only_wrong_preds = checkpoint['hyper_parameters'].get('save_only_wrong_preds', True)
-
-        # Instantiate the model with the hyperparameters
-        model = self(val_dataset, test_dataset, descriptors_dim, num_preds_to_save, save_only_wrong_preds)
+        # Instantiate the model with the checkpoint hyperparameters
+        model = self(val_dataset=val_dataset, test_dataset=test_dataset, **checkpoint['hyper_parameters'])
 
         # Apply the loaded state_dict to the model instance
         model.load_state_dict(checkpoint['state_dict'])

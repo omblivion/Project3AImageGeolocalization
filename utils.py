@@ -158,7 +158,7 @@ def print_program_config(args, model):
     print_divider("End of Configuration")
 
 
-def load_latest_checkpoint_model():
+def load_latest_checkpoint_model(val_dataset, test_dataset):
     # Specify the directory where checkpoints are saved
     checkpoint_dir = './LOGS/lightning_logs/'
     # Find all the version directories
@@ -183,6 +183,6 @@ def load_latest_checkpoint_model():
     latest_checkpoint = max(list_of_files, key=os.path.getctime)
 
     # Load the model from the latest checkpoint
-    model = CustomLightningModel.load_from_checkpoint(latest_checkpoint)
+    model = CustomLightningModel.load_model_from_checkpoint(latest_checkpoint, val_dataset, test_dataset)
 
     return model, latest_checkpoint
