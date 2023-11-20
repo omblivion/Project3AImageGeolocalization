@@ -159,11 +159,12 @@ def print_program_config(args, model):
 
     print(testing_status)
 
-    print_divider("Model Configuration")
-    print(f"Model Architecture: {model.model.__class__.__name__}")
-    print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
-    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
-    print(f"Loss Function: {model.loss_fn.__class__.__name__}")
+    if model and model.model:
+        print_divider("Model Configuration")
+        print(f"Model Architecture: {model.model.__class__.__name__}")
+        print(f"Pretrained: {torchvision.models.ResNet18_Weights.DEFAULT is not None}")
+        print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9   *this is a static print statement")
+        print(f"Loss Function: {model.loss_fn.__class__.__name__}")
     print_divider("End of Configuration")
 
 
