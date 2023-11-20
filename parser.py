@@ -1,4 +1,3 @@
-
 import argparse
 
 
@@ -18,14 +17,14 @@ def parse_arguments():
     # Architecture parameters
     parser.add_argument("--descriptors_dim", type=int, default=512,
                         help="dimensionality of the output descriptors")
-    
+
     # Visualizations parameters
     parser.add_argument("--num_preds_to_save", type=int, default=0,
                         help="At the end of training, save N preds for each query. "
-                        "Try with a small number like 3")
+                             "Try with a small number like 3")
     parser.add_argument("--save_only_wrong_preds", action="store_true",
                         help="When saving preds (if num_preds_to_save != 0) save only "
-                        "preds for difficult queries, i.e. with uncorrect first prediction")
+                             "preds for difficult queries, i.e. with uncorrect first prediction")
     # Paths parameters
     parser.add_argument("--train_path", type=str, default="data/gsv_xs/train",
                         help="path to train set")
@@ -33,7 +32,8 @@ def parse_arguments():
                         help="path to val set (must contain database and queries)")
     parser.add_argument("--test_path", type=str, default="data/sf_xs/test",
                         help="path to test set (must contain database and queries)")
-    
+    parser.add_argument("--test", type=str, default=None,
+                        help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
+
     args = parser.parse_args()
     return args
-

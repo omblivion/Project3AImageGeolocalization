@@ -1,14 +1,21 @@
 # Import necessary libraries and modules
+import datetime
+import glob
 import logging
+import os
+import re
+import time
 from typing import Tuple
 
 import faiss
 import numpy as np
 import torch
+from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import Dataset
 
 # Import custom visualization module
 import visualizations
+from lightning_model import CustomLightningModel
 
 # Define a list of recall values for evaluation
 RECALL_VALUES = [1, 5, 10, 20]
@@ -121,3 +128,107 @@ def print_weights_summary(initial_weights, final_weights):
     print(summary)
     print(general_summary)
     print_divider("End of Model Weights Summary")
+
+
+def print_program_config(args, model_instance):
+    current_time_rome = ((
+                                 datetime.datetime.utcnow() +
+                                 datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1))
+                         .strftime('%Y-%m-%d %H:%M:%S CET/CEST'))
+
+    print_divider("Program Configuration")
+    print(f"Current Date and Time: {current_time_rome}")
+    print(f"Max Epochs: {args.max_epochs}")
+    print(f"Training Path: {args.train_path}")
+    print(f"Validation Path: {args.val_path}")
+    print(f"Test Path: {args.test_path}")
+    print(f"Batch Size: {args.batch_size}")
+    print(f"Number of Workers: {args.num_workers}")
+    print(f"Descriptor Dimension: {args.descriptors_dim}")
+    print(f"Number of Predictions to Save: {args.num_preds_to_save}")
+    print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
+    print(f"Image per Place: {args.img_per_place}")
+    print(f"Minimum Image per Place: {args.min_img_per_place}")
+
+    # Check if the testing argument is provided and print relevant information
+    if hasattr(args, 'test') and args.test:
+        testing_status = f"Model tested from checkpoint: {args.test}" if args.test != 'latest' else "Model tested from the latest checkpoint."
+    else:
+        testing_status = "Model not in testing mode, training from scratch."
+
+    print(testing_status)
+
+    print_divider("Model Configuration")
+    print(f"Model Architecture: {model_instance.model.__class__.__name__}")
+    print(f"Pretrained: {'Yes' if model_instance.model.fc.in_features else 'No'}")  # Example check for pretrained
+    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9")
+    print(f"Loss Function: {model_instance.loss_fn.__class__.__name__}")
+    print_divider("End of Configuration")
+
+
+def load_latest_checkpoint_model(val_dataset, test_dataset):
+    # Specify the directory where checkpoints are saved
+    checkpoint_dir = './LOGS/lightning_logs/'
+    # Find all the version directories
+    version_dirs = glob.glob(os.path.join(checkpoint_dir, 'version_*'))
+
+    # Make sure there is at least one version directory
+    if not version_dirs:
+        raise FileNotFoundError(f"No version directories found in {checkpoint_dir}")
+
+    # Get the most recent version directory based on creation time
+    latest_version_dir = max(version_dirs, key=os.path.getctime)
+    # Get the path to the checkpoint directory within the latest version directory
+    checkpoint_subdir = os.path.join(latest_version_dir, 'checkpoints')
+    # List all the .ckpt files in the checkpoints subdirectory
+    list_of_files = glob.glob(os.path.join(checkpoint_subdir, '*.ckpt'))
+
+    # If there are no checkpoints, raise an informative error
+    if not list_of_files:
+        raise FileNotFoundError(f"No checkpoint files found in {checkpoint_subdir}")
+
+    # Get the most recent checkpoint file
+    latest_checkpoint = max(list_of_files, key=os.path.getctime)
+
+    # Load the model from the latest checkpoint
+    model = CustomLightningModel.load_model_from_checkpoint(latest_checkpoint, val_dataset, test_dataset)
+
+    return model, latest_checkpoint
+
+
+def load_model_from_checkpoint(checkpoint_path, val_dataset, test_dataset):
+    """
+    Load a model from the specified checkpoint file.
+
+    :param checkpoint_path: Path to the checkpoint file provided by the user.
+    :param val_dataset: The validation dataset to use with the model.
+    :param test_dataset: The test dataset to use with the model.
+    :return: A tuple of the loaded model and the checkpoint path used.
+    """
+    # Ensure the checkpoint file exists
+    if not os.path.isfile(checkpoint_path):
+        raise FileNotFoundError(f"Checkpoint file not found: {checkpoint_path}")
+
+    # Load the model from the specified checkpoint
+    model = CustomLightningModel.load_model_from_checkpoint(checkpoint_path, val_dataset, test_dataset)
+
+    return model, checkpoint_path
+
+
+def checkpoint_setup(args):
+    formatted_train_path = args.train_path.replace('/', '_').replace('.', '')
+    formatted_val_path = args.val_path.replace('/', '_').replace('.', '')
+    formatted_test_path = args.test_path.replace('/', '_').replace('.', '')
+    formatted_train_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_train_path)
+    formatted_val_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_val_path)
+    formatted_test_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_test_path)
+    checkpoint_cb = ModelCheckpoint(
+        monitor='R@1',
+        filename=f'train{formatted_train_path}-val{formatted_val_path}-test{formatted_test_path}-epoch{{epoch:02d}}-step{{global_step:04d}}-R1{{val/R@1:.4f}}_R@5{{val/R@5:.4f}}',
+        save_weights_only=True,
+        save_top_k=3,
+        mode='max',
+        verbose=True,
+        auto_insert_metric_name=False,
+    )
+    return checkpoint_cb

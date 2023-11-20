@@ -9,3 +9,4 @@ opencv-python==4.7.0.72
 scikit-image==0.19.3
 googledrivedownloader==0.4
 gdown==4.7.1
+numpy==1.22.4
