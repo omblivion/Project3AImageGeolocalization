@@ -3,6 +3,7 @@ import datetime
 import glob
 import logging
 import os
+import re
 import time
 from typing import Tuple
 
@@ -10,6 +11,7 @@ import faiss
 import numpy as np
 import torch
 import torchvision
+from pytorch_lightning.callbacks import ModelCheckpoint
 from torch.utils.data import Dataset
 
 # Import custom visualization module
@@ -212,3 +214,21 @@ def load_model_from_checkpoint(checkpoint_path, val_dataset, test_dataset):
     model = CustomLightningModel.load_model_from_checkpoint(checkpoint_path, val_dataset, test_dataset)
 
     return model, checkpoint_path
+
+
+def checkpoint_setup(args):
+    formatted_train_path = args.train_path.replace('/', '_').replace('.', '')
+    formatted_val_path = args.val_path.replace('/', '_').replace('.', '')
+    formatted_test_path = args.test_path.replace('/', '_').replace('.', '')
+    formatted_train_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_train_path)
+    formatted_val_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_val_path)
+    formatted_test_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_test_path)
+    checkpoint_cb = ModelCheckpoint(
+        monitor='R@1',
+        filename=f'train{formatted_train_path}-val{formatted_val_path}-test{formatted_test_path}-epoch{{epoch:02d}}-step{{global_step:04d}}-R1{{R@1:.4f}}',
+        save_weights_only=True,
+        save_top_k=3,
+        mode='max',
+        verbose=True,
+    )
+    return checkpoint_cb

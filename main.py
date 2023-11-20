@@ -3,7 +3,6 @@ import time
 
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks import ModelCheckpoint
 
 import parser  # Argument parser
 import utils  # Custom utility functions
@@ -61,20 +60,7 @@ if __name__ == '__main__':
     print("Model loaded successfully")
     utils.print_program_config(args, model)
 
-    # Format the paths to include them in the filename (remove slashes and dots)
-    formatted_train_path = args.train_path.replace('/', '_').replace('.', '')
-    formatted_val_path = args.val_path.replace('/', '_').replace('.', '')
-    formatted_test_path = args.test_path.replace('/', '_').replace('.', '')
-    # Define a model checkpointing callback to save the best 3 models based on Recall@1 metric
-    # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
-    checkpoint_cb = ModelCheckpoint(
-        monitor='R@1',
-        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_epoch_{{epoch:02d}}_step_{{global_step:04d}}_R1_{{R@1:.4f}}',
-        save_weights_only=True,
-        save_top_k=3,
-        mode='max',
-        every_n_train_steps=1,  # Save the checkpoint at every training step
-    )
+    checkpoint_cb = utils.checkpoint_setup(args)
 
     if torch.cuda.is_available():
         accelerator = 'gpu'
