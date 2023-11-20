@@ -67,16 +67,6 @@ python Project3AImageGeolocalization/main.py \
 
 This will automatically find and use the most recent checkpoint from the `/LOGS/lightning_logs` directory.
 
-```
-
-This formatted version includes:
-
-- A clear title.
-- Sections with headers for downloads, installation, and running experiments.
-- Code blocks for commands.
-- Notes for users on Google Colab.
-- Subsections for training, validation, and testing instructions.
-
 ## Command Line Arguments
 
 The following are the command line arguments you can use with `main.py` to train, validate, and test the image geolocalization model:
