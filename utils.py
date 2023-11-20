@@ -10,11 +10,11 @@ import faiss
 import numpy as np
 import torch
 import torchvision
+from pytorch_lightning import LightningModule
 from torch.utils.data import Dataset
 
 # Import custom visualization module
 import visualizations
-from main import LightningModel
 
 # Define a list of recall values for evaluation
 RECALL_VALUES = [1, 5, 10, 20]
@@ -160,11 +160,26 @@ def print_program_config(args, model):
 
 def load_latest_checkpoint_model():
     # Specify the directory where checkpoints are saved
-    checkpoint_dir = './LOGS'
-    # List all the .ckpt files in the directory
-    list_of_files = glob.glob(os.path.join(checkpoint_dir, '*.ckpt'))
+    checkpoint_dir = './LOGS/lightning_logs/'
+    # Search for all the subdirectories in the checkpoint directory
+    version_dirs = glob.glob(os.path.join(checkpoint_dir, 'version_*'))
+
+    # Get the most recent subdirectory
+    latest_version_dir = max(version_dirs, key=os.path.getctime)
+
+    # Now list all the .ckpt files in the most recent subdirectory
+    checkpoint_path = os.path.join(latest_version_dir, 'checkpoints', '*.ckpt')
+    list_of_files = glob.glob(checkpoint_path)
+
+    # If there are no checkpoints, raise an informative error
+    if not list_of_files:
+        raise FileNotFoundError("No checkpoint files found in the latest version directory.")
+
     # Get the most recent checkpoint file
     latest_checkpoint = max(list_of_files, key=os.path.getctime)
+
     # Load the model from the latest checkpoint
-    model = LightningModel.load_from_checkpoint(latest_checkpoint)
+    # Ensure that LightningModel is the correct class name for your model
+    model = LightningModule.load_from_checkpoint(latest_checkpoint)
+
     return model, latest_checkpoint
