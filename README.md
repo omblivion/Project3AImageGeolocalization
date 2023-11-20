@@ -1,8 +1,3 @@
-Improving the formatting and style of a README.md file involves organizing the content into clear sections, enhancing
-readability with formatting elements like headers and lists, and providing necessary context for each section. Here's a
-reformatted version:
-
-```markdown
 # Simple_VPR_codebase
 
 This repository is a starting point for implementing a Visual Place Recognition (VPR) pipeline. It includes a simple
