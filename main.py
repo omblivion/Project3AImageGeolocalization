@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 import parser  # Argument parser
 import utils  # Custom utility functions
-from lightningModel import LightningModel, get_datasets_and_dataloaders
+from lightning_model import LightningModel, get_datasets_and_dataloaders
 
 # Main execution block
 if __name__ == '__main__':
