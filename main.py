@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # The model will be saved whenever there is an improvement in the R@1 metric. If during an epoch the R@1 metric is among the top 3 values observed so far, the model's state will be saved.
     checkpoint_cb = ModelCheckpoint(
         monitor='R@1',
-        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_epoch({{epoch:02d}})_step({{global_step:04d}})_R@1[{{R@1:.4f}}]',
+        filename=f'{formatted_train_path}-{formatted_val_path}-{formatted_test_path}_epoch_{{epoch:02d}}_step_{{global_step:04d}}_R1_{{R@1:.4f}}',
         save_weights_only=True,
         save_top_k=3,
         mode='max',
