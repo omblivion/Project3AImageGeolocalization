@@ -50,8 +50,6 @@ class CustomLightningModel(pl.LightningModule):
         descriptors = self(images)  # Forward pass to get descriptors
         loss = self.loss_function(descriptors, labels)  # Compute loss
 
-        r_at_1 = self.calculate_recall_at_1(descriptors, labels)
-        self.log('R@1', r_at_1, on_step=True, on_epoch=True, prog_bar=False, logger=True)
         self.log('loss', loss.item(), logger=True)  # Log the loss value
         # print(f'Training Step {batch_idx}, Loss: {loss.item()}')
         return {'loss': loss}  # Return the loss value

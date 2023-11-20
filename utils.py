@@ -225,10 +225,11 @@ def checkpoint_setup(args):
     formatted_test_path = re.sub(r'[^A-Za-z0-9_]+', '_', formatted_test_path)
     checkpoint_cb = ModelCheckpoint(
         monitor='R@1',
-        filename=f'train{formatted_train_path}-val{formatted_val_path}-test{formatted_test_path}-epoch{{epoch:02d}}-step{{global_step:04d}}-R1{{R@1:.4f}}',
+        filename=f'train{formatted_train_path}-val{formatted_val_path}-test{formatted_test_path}-epoch{{epoch:02d}}-step{{global_step:04d}}-R1{{val/R@1:.4f}}_R@5{{val/R@5:.4f}}',
         save_weights_only=True,
         save_top_k=3,
         mode='max',
         verbose=True,
+        auto_insert_metric_name=False,
     )
     return checkpoint_cb
