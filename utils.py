@@ -10,11 +10,11 @@ import faiss
 import numpy as np
 import torch
 import torchvision
-from pytorch_lightning import LightningModule
 from torch.utils.data import Dataset
 
 # Import custom visualization module
 import visualizations
+from lightning_model import CustomLightningModel
 
 # Define a list of recall values for evaluation
 RECALL_VALUES = [1, 5, 10, 20]
@@ -183,6 +183,6 @@ def load_latest_checkpoint_model():
     latest_checkpoint = max(list_of_files, key=os.path.getctime)
 
     # Load the model from the latest checkpoint
-    model = LightningModule.load_from_checkpoint(latest_checkpoint)
+    model = CustomLightningModel.load_from_checkpoint(latest_checkpoint)
 
     return model, latest_checkpoint

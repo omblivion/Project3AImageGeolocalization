@@ -7,7 +7,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 import parser  # Argument parser
 import utils  # Custom utility functions
-from lightning_model import LightningModel, get_datasets_and_dataloaders
+from lightning_model import CustomLightningModel, get_datasets_and_dataloaders
 
 # Main execution block
 if __name__ == '__main__':
@@ -40,7 +40,7 @@ if __name__ == '__main__':
         should_train = False
     elif args.test:
         # Load the model from the specified checkpoint
-        model = LightningModel.load_from_checkpoint(args.checkpoint_path)
+        model = CustomLightningModel.load_from_checkpoint(args.checkpoint_path)
         print(f"Loaded model from checkpoint: {args.checkpoint_path}")
         should_train = False
     else:
@@ -54,8 +54,8 @@ if __name__ == '__main__':
 
         print("Initializing the model...")
         # Instantiate a Lightning model with given parameters
-        model = LightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
-                               args.save_only_wrong_preds)
+        model = CustomLightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
+                                     args.save_only_wrong_preds)
         initial_weights = {name: param.clone() for name, param in model.named_parameters()}
 
     print("Model loaded successfully")
