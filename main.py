@@ -7,7 +7,6 @@ import torch
 import arg_parser  # Argument parser
 import utils  # Custom utility functions
 from lightning_model import CustomLightningModel, get_datasets_and_dataloaders
-
 # Main execution block
 if __name__ == '__main__':
     print("""
