@@ -34,7 +34,7 @@ class CustomLightningModel(pl.LightningModule):
 
     def configure_optimizers(self):  # Method to configure optimizers
         # Using Stochastic Gradient Descent as the optimizer
-        optimizers = torch.optim.SGD(self.parameters(), lr=0.001, weight_decay=0.001, momentum=0.9)
+        optimizers = torch.optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08)
         return optimizers
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
