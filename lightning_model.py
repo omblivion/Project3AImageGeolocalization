@@ -35,10 +35,10 @@ class CustomLightningModel(pl.LightningModule):
 
     def configure_optimizers(self):  # Method to configure optimizers
         # Using Stochastic Gradient Descent as the optimizer
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-05, betas=(0.9, 0.999))
+        optimizers = torch.optim.Adam(self.parameters(), lr=1e-05, betas=(0.9, 0.999))
         # self.scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5, verbose=True)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10, eta_min=1e-6)
-        return {'optimizer': optimizer, 'lr_scheduler': self.scheduler, 'monitor': 'loss'}
+        self.scheduler = CosineAnnealingLR(self.optimizers, T_max=10, eta_min=1e-6)
+        return {'optimizer': optimizers, 'lr_scheduler': self.scheduler, 'monitor': 'loss'}
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
         loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss
