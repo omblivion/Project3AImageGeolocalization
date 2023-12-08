@@ -167,8 +167,9 @@ def print_model_configuration(model_instance):
     print_divider("Model Configuration")
     print(f"Model Architecture: {model_instance.model.__class__.__name__}")
     print(f"Pretrained: {'Yes' if model_instance.model.fc.in_features else 'No'}")  # Example check for pretrained
-    print(f"Optimizer: AdamW with lr = 1e-03, betas = (0.9, 0.999), weight decay = 1e-2")
-    print(f"Scheduler: Cosine Annealing with Tmax = 10 and eta_min=1e-6")
+    print(f"Optimizer: AdamW with lr = 1e-05, betas = (0.9, 0.999), weight decay = 1e-2")
+    # print(f"Scheduler: Cosine Annealing with Tmax = 10 and eta_min=1e-6")
+    print(f"No scheduler used")
     print(f"Loss Function: {model_instance.loss_fn.__class__.__name__}")
 
 
