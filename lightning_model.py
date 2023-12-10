@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 import torch
 import torchvision.models
 from pytorch_metric_learning import losses
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
