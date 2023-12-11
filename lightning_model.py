@@ -25,7 +25,7 @@ class CustomLightningModel(pl.LightningModule):
         # Modifying the fully connected layer of the ResNet model to match the desired descriptor dimensions
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, descriptors_dim)
         # Setting the loss function to ContrastiveLoss
-        self.loss_fn = losses.MultiSimilarityLoss(alpha=2, beta=50, base=1)
+        self.loss_fn = losses.CosFaceLoss(num_classes=descriptors_dim, embedding_size=512, margin=0.35, scale=64)
 
     def forward(self, images):  # Forward pass method
         descriptors = self.model(images)  # Pass images through the model to get descriptors
