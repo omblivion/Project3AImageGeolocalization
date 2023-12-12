@@ -4,7 +4,6 @@ import pytorch_lightning as pl
 import torch
 import torchvision.models
 from pytorch_metric_learning import losses
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -36,9 +35,9 @@ class CustomLightningModel(pl.LightningModule):
     def configure_optimizers(self):  # Method to configure optimizers
         # Using Stochastic Gradient Descent as the optimizer
         # optimizers = torch.optim.Adam(self.parameters(), lr=1e-04, betas=(0.9, 0.999))
-        optimizers = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-2)
-        # self.scheduler = ReduceLROnPlateau(optimizers, mode='min', patience=2, factor=0.5, verbose=True)
-        self.scheduler = CosineAnnealingWarmRestarts(optimizers, T_0=8, eta_min=1e-5)
+        optimizers = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
+        self.scheduler = ReduceLROnPlateau(optimizers, mode='min', patience=2, factor=0.5, verbose=True)
+        # self.scheduler = CosineAnnealingWarmRestarts(optimizers, T_0=8, eta_min=1e-5)
         return {'optimizer': optimizers, 'lr_scheduler': self.scheduler, 'monitor': 'loss'}
         # return optimizers
 
