@@ -36,8 +36,8 @@ class CustomLightningModel(pl.LightningModule):
     def configure_optimizers(self):  # Method to configure optimizers
         # Using Stochastic Gradient Descent as the optimizer
         # optimizers = torch.optim.Adam(self.parameters(), lr=1e-04, betas=(0.9, 0.999))
-        optimizers = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
-        self.scheduler = ReduceLROnPlateau(optimizers, mode='min', patience=2, factor=0.5, verbose=True)
+        optimizers = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-2)
+        self.scheduler = ReduceLROnPlateau(optimizers, mode='min', patience=2, factor=0.1, verbose=True)
         # self.scheduler = CosineAnnealingWarmRestarts(optimizers, T_0=8, eta_min=1e-5)
         return {'optimizer': optimizers, 'lr_scheduler': self.scheduler, 'monitor': 'loss'}
         # return optimizers
