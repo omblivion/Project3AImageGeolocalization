@@ -4,7 +4,7 @@ import time
 import pytorch_lightning as pl
 import torch
 
-import parser  # Argument parser
+import arg_parser  # Argument parser
 import utils  # Custom utility functions
 from lightning_model import CustomLightningModel, get_datasets_and_dataloaders
 
@@ -26,7 +26,8 @@ if __name__ == '__main__':
     print("Welcome to the ML&DL Project! Please wait while the program is starting up...\n")
 
     # Parse command line arguments
-    args = parser.parse_arguments()
+    args = arg_parser.parse_arguments()
+    utils.print_program_config(args)
 
     model = None
     should_train = True
@@ -58,7 +59,7 @@ if __name__ == '__main__':
         initial_weights = {name: param.clone() for name, param in model.named_parameters()}
 
     print("Model loaded successfully")
-    utils.print_program_config(args, model)
+    utils.print_model_configuration(model)
 
     checkpoint_cb = utils.checkpoint_setup(args)
 
@@ -115,7 +116,8 @@ if __name__ == '__main__':
         print("\nModel Performance Summary:")
         print(f"Training Duration: {training_duration:.2f} seconds")
         print(f"Testing Duration: {testing_duration:.2f} seconds")
-        utils.print_program_config(args, model)
+        utils.print_program_config(args)
+        utils.print_model_configuration(model)
         utils.print_weights_summary(initial_weights, final_weights)
     else:
         # Evaluate the model
@@ -128,4 +130,5 @@ if __name__ == '__main__':
 
         # Print a summary of the model's performance
         print("\nModel Performance Summary:")
-        utils.print_program_config(args, model)
+        utils.print_program_config(args)
+        utils.print_model_configuration(model)

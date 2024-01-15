@@ -95,6 +95,9 @@ The following are the command line arguments you can use with `main.py` to train
     - The file path to the test dataset. Like the validation dataset, it must contain a `database` and `queries` subdirectory. Default is `data/sf_xs/test`.
 - **`--test`**: String.
     - The file path to a specific model checkpoint file to load for evaluation. If set to 'latest', the most recent checkpoint will be used. Leave this argument empty if you wish to train a new model.
+- **`--sampling_str`**: String.
+    - Specifies the sampling strategy. If unset the model will default on the base sampling strategy, if `contextual` it
+      will perform contextual clustering.
 
 To use these arguments, add them to your command line call like so:
 
