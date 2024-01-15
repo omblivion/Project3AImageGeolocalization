@@ -34,6 +34,8 @@ def parse_arguments():
                         help="path to test set (must contain database and queries)")
     parser.add_argument("--test", type=str, default=None,
                         help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
+    parser.add_argument("--sampling_str", type=str, default=None,
+                        help="Specifies the sampling strategy to use during training. Options are 'per_class' for MPerClassSampler, 'hierarchical' for HierarchicalSampler, or None for random sampling.")
 
     args = parser.parse_args()
     return args

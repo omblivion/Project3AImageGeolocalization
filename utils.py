@@ -130,7 +130,7 @@ def print_weights_summary(initial_weights, final_weights):
     print_divider("End of Model Weights Summary")
 
 
-def print_program_config(args, model_instance):
+def print_program_config(args):
     current_time_rome = ((
                                  datetime.datetime.utcnow() +
                                  datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1))
@@ -141,7 +141,6 @@ def print_program_config(args, model_instance):
     print(f"Max Epochs: {args.max_epochs}")
     print(f"Training Path: {args.train_path}")
     print(f"Validation Path: {args.val_path}")
-    print(f"Test Path: {args.test_path}")
     print(f"Batch Size: {args.batch_size}")
     print(f"Number of Workers: {args.num_workers}")
     print(f"Descriptor Dimension: {args.descriptors_dim}")
@@ -149,6 +148,9 @@ def print_program_config(args, model_instance):
     print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
     print(f"Image per Place: {args.img_per_place}")
     print(f"Minimum Image per Place: {args.min_img_per_place}")
+
+    sampling_str = args.sampling_str if args.sampling_str else "Random sampling"
+    print(f"Sampling Strategy: {sampling_str}")
 
     # Check if the testing argument is provided and print relevant information
     if hasattr(args, 'test') and args.test:
@@ -158,12 +160,15 @@ def print_program_config(args, model_instance):
 
     print(testing_status)
 
+    print_divider("End of Configuration")
+
+
+def print_model_configuration(model_instance):
     print_divider("Model Configuration")
     print(f"Model Architecture: {model_instance.model.__class__.__name__}")
     print(f"Pretrained: {'Yes' if model_instance.model.fc.in_features else 'No'}")  # Example check for pretrained
     print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9")
     print(f"Loss Function: {model_instance.loss_fn.__class__.__name__}")
-    print_divider("End of Configuration")
 
 
 def load_latest_checkpoint_model(val_dataset, test_dataset):

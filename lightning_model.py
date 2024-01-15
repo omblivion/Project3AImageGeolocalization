@@ -8,8 +8,9 @@ from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
 import utils
+from datasets.contextual_train_dataset import ContextualDiverseTrainDataset
+from datasets.default_train_dataset import DefaultTrainDataset
 from datasets.test_dataset import TestDataset
-from datasets.train_dataset import TrainDataset
 
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
@@ -108,6 +109,8 @@ class CustomLightningModel(pl.LightningModule):
 
 
 # Define a function to create datasets and data loaders for training, validation, and testing
+
+
 def get_datasets_and_dataloaders(args):
     # Define the transformation pipeline for the training dataset
     train_transform = tfm.Compose([
@@ -116,20 +119,31 @@ def get_datasets_and_dataloaders(args):
         tfm.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         # Normalize tensors with given mean and std
     ])
-    # Create the training dataset
-    train_dataset = TrainDataset(
-        dataset_folder=args.train_path,
-        img_per_place=args.img_per_place,
-        min_img_per_place=args.min_img_per_place,
-        transform=train_transform  # Apply defined transformations
-    )
+
+    # Depending on the sampling strategy, create different samplers
+    if args.sampling_str == 'contextual':
+        train_dataset = ContextualDiverseTrainDataset(
+            dataset_folder=args.train_path,
+            img_per_place=args.img_per_place,
+            min_img_per_place=args.min_img_per_place,
+            transform=train_transform  # Apply defined transformations
+        )
+    else:
+        train_dataset = DefaultTrainDataset(
+            dataset_folder=args.train_path,
+            img_per_place=args.img_per_place,
+            min_img_per_place=args.min_img_per_place,
+            transform=train_transform  # Apply defined transformations
+        )
+
+    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True,
+                              num_workers=args.num_workers)
+
     # Create the validation and testing datasets without additional transformations
     val_dataset = TestDataset(dataset_folder=args.val_path)
     test_dataset = TestDataset(dataset_folder=args.test_path)
 
-    # Create data loaders for each dataset to handle batching, shuffling, and parallel loading
-    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=args.num_workers,
-                              shuffle=True)
+    # Create data loaders for validation and testing datasets
     val_loader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False)
 
