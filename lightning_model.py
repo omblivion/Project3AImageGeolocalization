@@ -4,7 +4,8 @@ import pytorch_lightning as pl
 import torch
 import torchvision.models
 from pytorch_metric_learning import losses
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim import ASGD
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -16,28 +17,83 @@ from datasets.test_dataset import TestDataset
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
 class CustomLightningModel(pl.LightningModule):
-    def __init__(self, val_dataset, test_dataset, descriptors_dim=512, num_preds_to_save=0, save_only_wrong_preds=True):
-        super().__init__()  # Calling the superclass initializer
-        self.val_dataset = val_dataset  # Validation dataset
-        self.test_dataset = test_dataset  # Test dataset
-        self.num_preds_to_save = num_preds_to_save  # Number of predictions to save
-        self.save_only_wrong_preds = save_only_wrong_preds  # Flag to save only wrong predictions
-        # Initializing a pre-trained ResNet-18 model
+    def __init__(self, val_dataset, test_dataset, args):
+        super().__init__()
+        self.args = args
+        self.val_dataset = val_dataset
+        self.test_dataset = test_dataset
+
+        # Use values from args or defaults
+        descriptors_dim = getattr(args, 'descriptors_dim', 512)
+        num_preds_to_save = getattr(args, 'num_preds_to_save', 0)
+        save_only_wrong_preds = getattr(args, 'save_only_wrong_preds', True)
+
+        self.num_preds_to_save = num_preds_to_save
+        self.save_only_wrong_preds = save_only_wrong_preds
+
         self.model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
-        # Modifying the fully connected layer of the ResNet model to match the desired descriptor dimensions
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, descriptors_dim)
-        # Setting the loss function to ContrastiveLoss
+
         self.loss_fn = losses.ContrastiveLoss(pos_margin=0, neg_margin=1)
 
     def forward(self, images):  # Forward pass method
         descriptors = self.model(images)  # Pass images through the model to get descriptors
         return descriptors  # Return the descriptors
 
-    def configure_optimizers(self):  # Method to configure optimizers
-        # Using AdamW as the optimizer and ReduceLRonPlateau as scheduler
-        optimizers = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
-        self.scheduler = ReduceLROnPlateau(optimizers, mode='min', patience=3, factor=0.1, verbose=True)
-        return {'optimizer': optimizers, 'lr_scheduler': self.scheduler, 'monitor': 'loss'}
+    def configure_optimizers(self):
+        optimizer_name = getattr(self.args, 'optimizer_name', 'adamw').lower()
+        optimizer_params_str = getattr(self.args, 'optimizer_params', '')
+        optimizer_params = [float(param) for param in optimizer_params_str.split(',') if param]
+
+        if optimizer_name == 'adamw':
+            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-03
+            betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
+            weight_decay = optimizer_params[3] if len(optimizer_params) > 3 else 0
+            optimizer = torch.optim.AdamW(self.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
+
+        elif optimizer_name == 'asgd':
+            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
+            weight_decay = optimizer_params[1] if len(optimizer_params) > 1 else 0
+            optimizer = ASGD(self.parameters(), lr=lr, weight_decay=weight_decay)
+
+        elif optimizer_name == 'adam':
+            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-03
+            betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
+            eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
+            weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
+            optimizer = torch.optim.Adam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+
+        elif optimizer_name == 'sgd':
+            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
+            weight_decay = optimizer_params[1] if len(optimizer_params) > 1 else 0
+            momentum = optimizer_params[2] if len(optimizer_params) > 2 else 0
+            optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay, momentum=momentum)
+
+        else:
+            # If nothing is specified its default
+            optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
+            scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
+            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
+
+        scheduler_name = getattr(self.args, 'scheduler_name', '').lower()
+        scheduler_params_str = getattr(self.args, 'scheduler_params', '')
+        scheduler_params = [float(param) for param in scheduler_params_str.split(',') if param]
+
+        if scheduler_name:
+            if scheduler_name == 'reduce_lr_on_plateau':
+                mode = 'min' if len(scheduler_params) == 0 or scheduler_params[0] == 0 else 'max'
+                patience = 3 if len(scheduler_params) < 2 else int(scheduler_params[1])
+                factor = 0.1 if len(scheduler_params) < 3 else scheduler_params[2]
+                verbose = True if len(scheduler_params) < 4 else bool(scheduler_params[3])
+                scheduler = ReduceLROnPlateau(optimizer, mode=mode, patience=patience, factor=factor, verbose=verbose)
+
+            elif scheduler_name == 'cosine_annealing':
+                T_max = 10 if len(scheduler_params) == 0 else scheduler_params[0]  # Default T_max
+                eta_min = 10 if len(scheduler_params) == 0 else scheduler_params[1]  # Default eta_min
+                scheduler = CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
+            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
+
+        return optimizer
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
         loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss

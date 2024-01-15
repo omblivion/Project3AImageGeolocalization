@@ -36,6 +36,16 @@ def parse_arguments():
                         help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
     parser.add_argument("--sampling_str", type=str, default=None,
                         help="Specifies the sampling strategy to use during training. Options are 'per_class' for MPerClassSampler, 'hierarchical' for HierarchicalSampler, or None for random sampling.")
+    parser.add_argument("--optimizer_name", type=str, default='adamw',
+                        help="Name of the optimizer to use ('adamw', 'asgd', 'adam', 'sgd')")
+    parser.add_argument("--optimizer_params", type=str, default='',
+                        help="Comma-separated list of parameters for the optimizer")
+
+    # Scheduler parameters
+    parser.add_argument("--scheduler_name", type=str, default='',
+                        help="Name of the scheduler to use ('reduce_lr_on_plateau', 'cosine_annealing')")
+    parser.add_argument("--scheduler_params", type=str, default='',
+                        help="Comma-separated list of parameters for the scheduler")
 
     args = parser.parse_args()
     return args
