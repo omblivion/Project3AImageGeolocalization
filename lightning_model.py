@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import torch
 import torchvision.models
 from pytorch_metric_learning import losses
-from torch.optim import ASGD
+from torch.optim import ASGD, SGD, Adam, AdamW  # type: ignore
 from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
