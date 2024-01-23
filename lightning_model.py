@@ -9,11 +9,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
-import p_adam  # type: ignore
 import utils
 from datasets.contextual_train_dataset import ContextualDiverseTrainDataset
 from datasets.default_train_dataset import DefaultTrainDataset
 from datasets.test_dataset import TestDataset
+from p_adam import PAdam  # type: ignore
 
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
