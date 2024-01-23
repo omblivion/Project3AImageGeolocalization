@@ -9,6 +9,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
+import p_adam  # type: ignore
 import utils
 from datasets.contextual_train_dataset import ContextualDiverseTrainDataset
 from datasets.default_train_dataset import DefaultTrainDataset
@@ -68,6 +69,16 @@ class CustomLightningModel(pl.LightningModule):
             weight_decay = optimizer_params[1] if len(optimizer_params) > 1 else 0
             momentum = optimizer_params[2] if len(optimizer_params) > 2 else 0
             optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay, momentum=momentum)
+
+        elif optimizer_name == 'padam':
+            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
+            betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
+            eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
+            weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
+            lambda_p = optimizer_params[5] if len(optimizer_params) > 5 else 1e-02
+            p_norm = optimizer_params[6] if len(optimizer_params) > 6 else 1
+            optimizer = torch.optim.PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
+                                          lambda_p=lambda_p, p_norm=p_norm)
 
         else:
             # If nothing is specified its default
