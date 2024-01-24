@@ -5,7 +5,7 @@ import torch
 import torchvision.models
 from pytorch_metric_learning import losses
 from torch.optim import ASGD, SGD, Adam, AdamW  # type: ignore
-from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -41,6 +41,12 @@ class CustomLightningModel(pl.LightningModule):
         descriptors = self.model(images)  # Pass images through the model to get descriptors
         return descriptors  # Return the descriptors
 
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
+        scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
+        return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
+
+    '''
     def configure_optimizers(self):
         optimizer_name = getattr(self.args, 'optimizer_name', 'adamw').lower()
         optimizer_params_str = getattr(self.args, 'optimizer_params', '')
@@ -105,7 +111,7 @@ class CustomLightningModel(pl.LightningModule):
             return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
 
         return optimizer
-
+    '''
     def loss_function(self, descriptors, labels):  # Method to compute loss
         loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss
         return loss
