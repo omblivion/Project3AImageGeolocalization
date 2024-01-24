@@ -5,7 +5,7 @@ import torch
 import torchvision.models
 from pytorch_metric_learning import losses
 from torch.optim import ASGD, SGD, Adam, AdamW  # type: ignore
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -41,12 +41,13 @@ class CustomLightningModel(pl.LightningModule):
         descriptors = self.model(images)  # Pass images through the model to get descriptors
         return descriptors  # Return the descriptors
 
+    '''
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
         scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
-
     '''
+
     def configure_optimizers(self):
         optimizer_name = getattr(self.args, 'optimizer_name', 'adamw').lower()
         optimizer_params_str = getattr(self.args, 'optimizer_params', '')
@@ -87,7 +88,7 @@ class CustomLightningModel(pl.LightningModule):
                                           lambda_p=lambda_p, p_norm=p_norm)
 
         else:
-            # If nothing is specified its default
+            # If nothing is specified this is the default
             optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
             scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
             return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
@@ -106,12 +107,12 @@ class CustomLightningModel(pl.LightningModule):
 
             elif scheduler_name == 'cosine_annealing':
                 T_max = 10 if len(scheduler_params) == 0 else scheduler_params[0]  # Default T_max
-                eta_min = 10 if len(scheduler_params) == 0 else scheduler_params[1]  # Default eta_min
+                eta_min = 0 if len(scheduler_params) == 0 else scheduler_params[1]  # Default eta_min
                 scheduler = CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
             return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
 
         return optimizer
-    '''
+
     def loss_function(self, descriptors, labels):  # Method to compute loss
         loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss
         return loss
