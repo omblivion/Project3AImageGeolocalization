@@ -14,7 +14,7 @@ from datasets.train_dataset import TrainDataset
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
 class CustomLightningModel(pl.LightningModule):
-    def __init__(self, val_dataset, test_dataset, descriptors_dim=512, num_preds_to_save=0, save_only_wrong_preds=True):
+    def __init__(self, val_dataset, test_dataset, descriptors_dim=512, num_preds_to_save=0, save_only_wrong_preds=True, loss_name='contrastive', loss_params=''):
         super().__init__()  # Calling the superclass initializer
         self.val_dataset = val_dataset  # Validation dataset
         self.test_dataset = test_dataset  # Test dataset
@@ -24,8 +24,33 @@ class CustomLightningModel(pl.LightningModule):
         self.model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         # Modifying the fully connected layer of the ResNet model to match the desired descriptor dimensions
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, descriptors_dim)
-        # Setting the loss function to ContrastiveLoss
-        self.loss_fn = losses.CosFaceLoss(num_classes=descriptors_dim, embedding_size=512, margin=0.35, scale=64)
+        # Setting the loss function
+        loss_params = [float(param) for param in loss_params.split(',') if param]
+
+        if loss_name == 'multisimilarity':
+            alpha = loss_params[0] if len(loss_params) > 0 else 2
+            beta = loss_params[1] if len(loss_params) > 1 else 50
+            base = loss_params[2] if len(loss_params) > 2 else 1
+            self.loss_fn = losses.MultiSimilarityLoss(alpha = alpha, beta = beta, base = base)
+        
+        elif loss_name == "cosface":
+            num_classes = loss_params[0] if len(loss_params) > 0 else 256
+            embedding_size = loss_params[1] if len(loss_params) > 1 else 512
+            margin = loss_params[2] if len(loss_params) > 2 else 0.35
+            scale = loss_params[3] if len(loss_params) > 3 else 64
+            self.loss_fn = losses.CosFaceLoss(num_classes=num_classes, embedding_size=embedding_size, margin=margin, scale=scale)
+        
+        elif loss_name == "tripletmargin":
+            margin = loss_params[0] if len(loss_params) > 0 else 0.05
+            self.loss_fn = losses.TripletMarginLoss(margin=margin)
+
+        elif loss_name == "fastap":
+            num_bins = loss_params[0] if len(loss_params) > 0 else 10
+            self.loss_fn = losses.FastAPLoss(num_bins = num_bins)
+
+        else:
+            #default setting of loss to the Contrastive Loss
+            self.loss_fn = losses.ContrastiveLoss(pos_margin=0, neg_margin=1)
 
     def forward(self, images):  # Forward pass method
         descriptors = self.model(images)  # Pass images through the model to get descriptors
@@ -37,7 +62,7 @@ class CustomLightningModel(pl.LightningModule):
         return optimizers
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
-        loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss
+        loss = self.loss_fn(descriptors, labels)  # Compute loss
         return loss
 
     def training_step(self, batch, batch_idx):  # Method for a single training step

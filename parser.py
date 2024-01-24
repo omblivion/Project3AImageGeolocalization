@@ -34,6 +34,8 @@ def parse_arguments():
                         help="path to test set (must contain database and queries)")
     parser.add_argument("--test", type=str, default=None,
                         help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
-
+    
+    parser.add_argument("--loss_name", type=str, default='contrastive')
+    parser.add_argument("--loss_params", type=str, default='')
     args = parser.parse_args()
     return args

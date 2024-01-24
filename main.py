@@ -54,7 +54,7 @@ if __name__ == '__main__':
         print("Initializing the model...")
         # Instantiate a Lightning model with given parameters
         model = CustomLightningModel(val_dataset, test_dataset, args.descriptors_dim, args.num_preds_to_save,
-                                     args.save_only_wrong_preds)
+                                     args.save_only_wrong_preds, args.loss_name, args.loss_params)
         initial_weights = {name: param.clone() for name, param in model.named_parameters()}
 
     print("Model loaded successfully")
