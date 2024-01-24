@@ -90,7 +90,7 @@ class CustomLightningModel(pl.LightningModule):
             # If nothing is specified its default
             optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
             scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
-            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
+            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
 
         scheduler_name = getattr(self.args, 'scheduler_name', '').lower()
         scheduler_params_str = getattr(self.args, 'scheduler_params', '')
@@ -108,7 +108,7 @@ class CustomLightningModel(pl.LightningModule):
                 T_max = 10 if len(scheduler_params) == 0 else scheduler_params[0]  # Default T_max
                 eta_min = 10 if len(scheduler_params) == 0 else scheduler_params[1]  # Default eta_min
                 scheduler = CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
-            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
+            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
 
         return optimizer
     '''
