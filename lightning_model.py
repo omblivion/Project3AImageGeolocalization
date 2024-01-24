@@ -87,7 +87,7 @@ class CustomLightningModel(pl.LightningModule):
             optimizer = torch.optim.PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
                                           lambda_p=lambda_p, p_norm=p_norm)
 
-        else:
+        if optimizer_name is None:
             # If nothing is specified this is the default
             optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
             scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
