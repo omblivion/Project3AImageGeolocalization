@@ -3,7 +3,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import torchvision.models
-from pytorch_metric_learning import losses
+from pytorch_metric_learning import losses, miners
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -24,6 +24,7 @@ class CustomLightningModel(pl.LightningModule):
         self.model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         # Modifying the fully connected layer of the ResNet model to match the desired descriptor dimensions
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, descriptors_dim)
+        self.miner_fn = None #overwritten for TripletMargin
         # Setting the loss function
         loss_params = [float(param) for param in loss_params.split(',') if param]
 
@@ -33,15 +34,10 @@ class CustomLightningModel(pl.LightningModule):
             base = loss_params[2] if len(loss_params) > 2 else 1
             self.loss_fn = losses.MultiSimilarityLoss(alpha = alpha, beta = beta, base = base)
         
-        elif loss_name == "cosface":
-            num_classes = loss_params[0] if len(loss_params) > 0 else 256
-            embedding_size = loss_params[1] if len(loss_params) > 1 else 512
-            margin = loss_params[2] if len(loss_params) > 2 else 0.35
-            scale = loss_params[3] if len(loss_params) > 3 else 64
-            self.loss_fn = losses.CosFaceLoss(num_classes=num_classes, embedding_size=embedding_size, margin=margin, scale=scale)
-        
         elif loss_name == "tripletmargin":
             margin = loss_params[0] if len(loss_params) > 0 else 0.05
+            # Set miner with the same margin
+            self.miner_fn = miners.TripletMarginMiner(margin=margin)
             self.loss_fn = losses.TripletMarginLoss(margin=margin)
 
         elif loss_name == "fastap":
@@ -62,7 +58,12 @@ class CustomLightningModel(pl.LightningModule):
         return optimizers
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
-        loss = self.loss_fn(descriptors, labels)  # Compute loss
+        
+        if self.miner_fn is not None:
+            miner_output = self.miner_fn(descriptors, labels)
+            loss = self.loss_fn(descriptors, labels, miner_output)
+        else:
+            loss = self.loss_fn(descriptors, labels)  # Compute loss
         return loss
 
     def training_step(self, batch, batch_idx):  # Method for a single training step
