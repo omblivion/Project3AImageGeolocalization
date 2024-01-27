@@ -175,7 +175,7 @@ def print_model_configuration(model_instance):
 
     if optimizer_name:
         print(f"Optimizer: {optimizer_name.title()}")
-        optimizer_params = optimizer_params_str.split(',')
+        optimizer_params = optimizer_params_str.split(',') if optimizer_params_str else []
         if optimizer_name == 'adamw':
             print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-03'}")
             print(f"  - Betas: {tuple(optimizer_params[1:3]) if len(optimizer_params) > 2 else '(0.9, 0.999)'}")
@@ -192,12 +192,19 @@ def print_model_configuration(model_instance):
             print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-02'}")
             print(f"  - Weight decay: {optimizer_params[1] if len(optimizer_params) > 1 else '0'}")
             print(f"  - Momentum: {optimizer_params[2] if len(optimizer_params) > 2 else '0'}")
+        elif optimizer_name == 'padam':
+            print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-02'}")
+            print(f"  - Betas: {tuple(optimizer_params[1:3]) if len(optimizer_params) > 2 else '(0.9, 0.999)'}")
+            print(f"  - Epsilon: {optimizer_params[3] if len(optimizer_params) > 3 else '1e-08'}")
+            print(f"  - Weight decay: {optimizer_params[4] if len(optimizer_params) > 4 else '0'}")
+            print(f"  - Lambda: {optimizer_params[5] if len(optimizer_params) > 5 else '1e-02'}")
+            print(f"  - P Norm: {optimizer_params[6] if len(optimizer_params) > 6 else '1'}")
     else:
         print("Default Optimizer: AdamW with lr=1e-4, betas=(0.9, 0.999), weight decay=1e-3")
 
     if scheduler_name:
         print(f"Scheduler: {scheduler_name.replace('_', ' ').title()}")
-        scheduler_params = scheduler_params_str.split(',')
+        scheduler_params = scheduler_params_str.split(',') if scheduler_params_str else []
         if scheduler_name == 'reduce_lr_on_plateau':
             mode = 'min' if len(scheduler_params) == 0 or scheduler_params[0] == '0' else 'max'
             print(f"  - Mode: {mode}")

@@ -4,8 +4,7 @@ import pytorch_lightning as pl
 import torch
 import torchvision.models
 from pytorch_metric_learning import losses
-from torch.optim import ASGD, SGD, Adam, AdamW  # type: ignore
-from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR
+from torch.optim import ASGD, SGD, Adam, AdamW, lr_scheduler  # type: ignore
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -41,77 +40,96 @@ class CustomLightningModel(pl.LightningModule):
         descriptors = self.model(images)  # Pass images through the model to get descriptors
         return descriptors  # Return the descriptors
 
-    '''
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
-        scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
-        return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
-    '''
+        # Helper function to get attributes
+        def get_attribute(attr_name, default=None):
+            return getattr(self.args, attr_name, default)
 
-    def configure_optimizers(self):
-        optimizer_name = getattr(self.args, 'optimizer_name', 'adamw').lower()
-        optimizer_params_str = getattr(self.args, 'optimizer_params', '')
-        optimizer_params = [float(param) for param in optimizer_params_str.split(',') if param]
+        # Helper function to parse parameters
+        def parse_params(params_str, default=[]):
+            return [float(param) for param in params_str.split(',') if param] if params_str else default
 
-        if optimizer_name == 'adamw':
-            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-03
-            betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
-            weight_decay = optimizer_params[3] if len(optimizer_params) > 3 else 0
-            optimizer = torch.optim.AdamW(self.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
+        # Default optimizer
+        default_optimizer = AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
 
-        elif optimizer_name == 'asgd':
-            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
-            weight_decay = optimizer_params[1] if len(optimizer_params) > 1 else 0
-            optimizer = ASGD(self.parameters(), lr=lr, weight_decay=weight_decay)
+        # Get optimizer details
+        optimizer_name = get_attribute('optimizer_name')
+        optimizer_params_str = get_attribute('optimizer_params', '')
+        optimizer_params = parse_params(optimizer_params_str)
 
-        elif optimizer_name == 'adam':
-            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-03
-            betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
-            eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
-            weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
-            optimizer = torch.optim.Adam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+        # Optimizer selection
+        if optimizer_name:
+            optimizer_name = optimizer_name.lower()
+            if optimizer_name == 'adamw':
+                lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-03
+                betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
+                weight_decay = optimizer_params[3] if len(optimizer_params) > 3 else 0
+                optimizer = AdamW(self.parameters(), lr=lr, betas=betas, weight_decay=weight_decay)
+            elif optimizer_name == 'asgd':
+                lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
+                weight_decay = optimizer_params[1] if len(optimizer_params) > 1 else 0
+                optimizer = ASGD(self.parameters(), lr=lr, weight_decay=weight_decay)
+                print("ASGD will not work with ReduceLROnPlateau scheduler, using default scheduler")
+                return optimizer
+            elif optimizer_name == 'adam':
+                lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-03
+                betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
+                eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
+                weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
+                optimizer = Adam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+            elif optimizer_name == 'sgd':
+                lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
+                momentum = optimizer_params[1] if len(optimizer_params) > 1 else 0
+                weight_decay = optimizer_params[2] if len(optimizer_params) > 2 else 0
+                optimizer = SGD(self.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+            elif optimizer_name == 'padam':
+                lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
+                betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
+                eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
+                weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
+                lambda_p = optimizer_params[5] if len(optimizer_params) > 5 else 1e-02
+                p_norm = optimizer_params[6] if len(optimizer_params) > 6 else 1
+                optimizer = torch.optim.PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
+                                              lambda_p=lambda_p, p_norm=p_norm)
+            else:
+                print("Using default optimizer!")
+                optimizer = default_optimizer
+        else:
+            print("Using default optimizer!")
+            optimizer = default_optimizer
 
-        elif optimizer_name == 'sgd':
-            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
-            weight_decay = optimizer_params[1] if len(optimizer_params) > 1 else 0
-            momentum = optimizer_params[2] if len(optimizer_params) > 2 else 0
-            optimizer = torch.optim.SGD(self.parameters(), lr=lr, weight_decay=weight_decay, momentum=momentum)
+        # Default scheduler
+        default_scheduler = lr_scheduler.ReduceLROnPlateau(default_optimizer, mode='min', patience=3, factor=0.1,
+                                                           verbose=True)
 
-        elif optimizer_name == 'padam':
-            lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
-            betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
-            eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
-            weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
-            lambda_p = optimizer_params[5] if len(optimizer_params) > 5 else 1e-02
-            p_norm = optimizer_params[6] if len(optimizer_params) > 6 else 1
-            optimizer = torch.optim.PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
-                                          lambda_p=lambda_p, p_norm=p_norm)
+        # Get scheduler details
+        scheduler_name = get_attribute('scheduler_name')
+        scheduler_params_str = get_attribute('scheduler_params', '')
+        scheduler_params = parse_params(scheduler_params_str)
 
-        if optimizer_name is None:
-            # If nothing is specified this is the default
-            optimizer = torch.optim.AdamW(self.parameters(), lr=1e-04, betas=(0.9, 0.999), weight_decay=1e-3)
-            scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=3, factor=0.1, verbose=True)
-            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
-
-        scheduler_name = getattr(self.args, 'scheduler_name', '').lower()
-        scheduler_params_str = getattr(self.args, 'scheduler_params', '')
-        scheduler_params = [float(param) for param in scheduler_params_str.split(',') if param]
-
+        # Scheduler selection
         if scheduler_name:
+            scheduler_name = scheduler_name.lower()
             if scheduler_name == 'reduce_lr_on_plateau':
                 mode = 'min' if len(scheduler_params) == 0 or scheduler_params[0] == 0 else 'max'
                 patience = 3 if len(scheduler_params) < 2 else int(scheduler_params[1])
                 factor = 0.1 if len(scheduler_params) < 3 else scheduler_params[2]
                 verbose = True if len(scheduler_params) < 4 else bool(scheduler_params[3])
-                scheduler = ReduceLROnPlateau(optimizer, mode=mode, patience=patience, factor=factor, verbose=verbose)
-
+                scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode=mode, patience=patience, factor=factor,
+                                                           verbose=verbose)
             elif scheduler_name == 'cosine_annealing':
-                T_max = 10 if len(scheduler_params) == 0 else scheduler_params[0]  # Default T_max
-                eta_min = 0 if len(scheduler_params) == 0 else scheduler_params[1]  # Default eta_min
-                scheduler = CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
-            return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
+                T_max = 10 if len(scheduler_params) == 0 else scheduler_params[0]
+                eta_min = 0 if len(scheduler_params) < 2 else scheduler_params[1]
+                scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
+            # Add other schedulers as needed...
+            else:
+                print("Using default scheduler!")
+                scheduler = default_scheduler
+        else:
+            print("Using default scheduler!")
+            scheduler = default_scheduler
 
-        return optimizer
+        return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
         loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss
