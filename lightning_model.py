@@ -89,7 +89,7 @@ class CustomLightningModel(pl.LightningModule):
                 weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
                 lambda_p = optimizer_params[5] if len(optimizer_params) > 5 else 1e-02
                 p_norm = optimizer_params[6] if len(optimizer_params) > 6 else 1
-                optimizer = torch.optim.PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
+                optimizer = PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
                                               lambda_p=lambda_p, p_norm=p_norm)
             else:
                 print("Using default optimizer!")
