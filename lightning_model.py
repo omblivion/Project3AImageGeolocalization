@@ -83,6 +83,7 @@ class CustomLightningModel(pl.LightningModule):
                 weight_decay = optimizer_params[2] if len(optimizer_params) > 2 else 0
                 optimizer = SGD(self.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
             elif optimizer_name == 'padam':
+                print("CURRENTLY BROKEN")
                 lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
                 betas = (optimizer_params[1], optimizer_params[2]) if len(optimizer_params) > 2 else (0.9, 0.999)
                 eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
