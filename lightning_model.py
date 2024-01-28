@@ -5,6 +5,7 @@ import torch
 import torchvision.models
 from pytorch_metric_learning import losses
 from torch.optim import ASGD, SGD, Adam, AdamW, lr_scheduler  # type: ignore
+from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts  # type: ignore
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
 
@@ -122,6 +123,10 @@ class CustomLightningModel(pl.LightningModule):
                 T_max = 10 if len(scheduler_params) == 0 else scheduler_params[0]
                 eta_min = 0 if len(scheduler_params) < 2 else scheduler_params[1]
                 scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max, eta_min=eta_min)
+            elif scheduler_name == 'cosine_annealing_warm':
+                T_0 = 8 if len(scheduler_params) == 0 else scheduler_params[0]
+                eta_min = 1e-5 if len(scheduler_params) < 2 else scheduler_params[1]
+                scheduler = lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=T_0, eta_min=eta_min)
             # Add other schedulers as needed...
             else:
                 print("Using default scheduler!")
