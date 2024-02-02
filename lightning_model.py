@@ -26,7 +26,7 @@ class CustomLightningModel(pl.LightningModule):
         # Use values from args or defaults
         descriptors_dim = getattr(args, 'descriptors_dim', 512)
         num_preds_to_save = getattr(args, 'num_preds_to_save', 0)
-        save_only_wrong_preds = getattr(args, 'save_only_wrong_preds', True)
+        save_only_wrong_preds = getattr(args, 'save_only_wrong_preds', False)
 
         self.num_preds_to_save = num_preds_to_save
         self.save_only_wrong_preds = save_only_wrong_preds
