@@ -17,7 +17,7 @@ from p_adam import PAdam  # type: ignore
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
 class CustomLightningModel(pl.LightningModule):
-    def __init__(self, val_dataset, test_dataset, args):
+    def __init__(self, val_dataset, test_dataset, args=None):
         super().__init__()
         self.args = args
         self.val_dataset = val_dataset
