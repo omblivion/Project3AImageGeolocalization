@@ -34,8 +34,20 @@ def parse_arguments():
                         help="path to test set (must contain database and queries)")
     parser.add_argument("--test", type=str, default=None,
                         help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
-    
-    parser.add_argument("--loss_name", type=str, default='contrastive')
-    parser.add_argument("--loss_params", type=str, default='')
+    # Model parameters
+    parser.add_argument("--sampling_str", type=str, default=None,
+                        help="Specifies the sampling strategy to use during training. Options are 'per_class' for MPerClassSampler, 'hierarchical' for HierarchicalSampler, or None for random sampling.")
+    parser.add_argument("--optimizer_name", type=str, default=None,
+                        help="Name of the optimizer to use ('adamw', 'asgd', 'adam', 'sgd')")
+    parser.add_argument("--optimizer_params", type=str, default=None,
+                        help="Comma-separated list of parameters for the optimizer")
+    parser.add_argument("--scheduler_name", type=str, default='',
+                        help="Name of the scheduler to use ('reduce_lr_on_plateau', 'cosine_annealing')")
+    parser.add_argument("--scheduler_params", type=str, default='',
+                        help="Comma-separated list of parameters for the scheduler")
+    parser.add_argument("--loss_name", type=str, default='',
+                        help="Specifies the loss function to be used ('contrastive', 'multisimilarity', 'tripletmargin', 'fastap')")
+    parser.add_argument("--loss_params", type=str, default='',
+                        help="Comma-separated list of parameters for the loss")
     args = parser.parse_args()
     return args

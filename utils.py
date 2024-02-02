@@ -130,7 +130,7 @@ def print_weights_summary(initial_weights, final_weights):
     print_divider("End of Model Weights Summary")
 
 
-def print_program_config(args, model_instance):
+def print_program_config(args):
     current_time_rome = ((
                                  datetime.datetime.utcnow() +
                                  datetime.timedelta(hours=2 if time.localtime().tm_isdst else 1))
@@ -141,7 +141,6 @@ def print_program_config(args, model_instance):
     print(f"Max Epochs: {args.max_epochs}")
     print(f"Training Path: {args.train_path}")
     print(f"Validation Path: {args.val_path}")
-    print(f"Test Path: {args.test_path}")
     print(f"Batch Size: {args.batch_size}")
     print(f"Number of Workers: {args.num_workers}")
     print(f"Descriptor Dimension: {args.descriptors_dim}")
@@ -149,6 +148,9 @@ def print_program_config(args, model_instance):
     print(f"Save Only Wrong Predictions: {args.save_only_wrong_preds}")
     print(f"Image per Place: {args.img_per_place}")
     print(f"Minimum Image per Place: {args.min_img_per_place}")
+
+    sampling_str = args.sampling_str if args.sampling_str else "Random sampling"
+    print(f"Sampling Strategy: {sampling_str}")
 
     # Check if the testing argument is provided and print relevant information
     if hasattr(args, 'test') and args.test:
@@ -158,12 +160,64 @@ def print_program_config(args, model_instance):
 
     print(testing_status)
 
+    print_divider("End of Configuration")
+
+
+def print_model_configuration(model_instance):
     print_divider("Model Configuration")
     print(f"Model Architecture: {model_instance.model.__class__.__name__}")
-    print(f"Pretrained: {'Yes' if model_instance.model.fc.in_features else 'No'}")  # Example check for pretrained
-    print(f"Optimizer: SGD with lr=0.001, weight_decay=0.001, momentum=0.9")
+    print(f"Pretrained: {'Yes' if model_instance.model.fc.in_features else 'No'}")
+
+    optimizer_name = getattr(model_instance.args, 'optimizer_name', 'adamw')
+    optimizer_params_str = getattr(model_instance.args, 'optimizer_params', '1e-04,0.9,0.999,1e-3')
+    scheduler_name = getattr(model_instance.args, 'scheduler_name', 'reduce_lr_on_plateau')
+    scheduler_params_str = getattr(model_instance.args, 'scheduler_params', 'min,3,0.1,True')
+
+    if optimizer_name:
+        print(f"Optimizer: {optimizer_name.title()}")
+        optimizer_params = optimizer_params_str.split(',') if optimizer_params_str else []
+        if optimizer_name == 'adamw':
+            print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-03'}")
+            print(f"  - Betas: {tuple(optimizer_params[1:3]) if len(optimizer_params) > 2 else '(0.9, 0.999)'}")
+            print(f"  - Weight decay: {optimizer_params[3] if len(optimizer_params) > 3 else '0'}")
+        elif optimizer_name == 'adam':
+            print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-03'}")
+            print(f"  - Betas: {tuple(optimizer_params[1:3]) if len(optimizer_params) > 2 else '(0.9, 0.999)'}")
+            print(f"  - Epsilon: {optimizer_params[3] if len(optimizer_params) > 3 else '1e-08'}")
+            print(f"  - Weight decay: {optimizer_params[4] if len(optimizer_params) > 4 else '0'}")
+        elif optimizer_name == 'asgd':
+            print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-02'}")
+            print(f"  - Weight decay: {optimizer_params[1] if len(optimizer_params) > 1 else '0'}")
+        elif optimizer_name == 'sgd':
+            print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-02'}")
+            print(f"  - Weight decay: {optimizer_params[1] if len(optimizer_params) > 1 else '0'}")
+            print(f"  - Momentum: {optimizer_params[2] if len(optimizer_params) > 2 else '0'}")
+        elif optimizer_name == 'padam':
+            print(f"  - Learning rate: {optimizer_params[0] if len(optimizer_params) > 0 else '1e-02'}")
+            print(f"  - Betas: {tuple(optimizer_params[1:3]) if len(optimizer_params) > 2 else '(0.9, 0.999)'}")
+            print(f"  - Epsilon: {optimizer_params[3] if len(optimizer_params) > 3 else '1e-08'}")
+            print(f"  - Weight decay: {optimizer_params[4] if len(optimizer_params) > 4 else '0'}")
+            print(f"  - Lambda: {optimizer_params[5] if len(optimizer_params) > 5 else '1e-02'}")
+            print(f"  - P Norm: {optimizer_params[6] if len(optimizer_params) > 6 else '1'}")
+    else:
+        print("Default Optimizer: AdamW with lr=1e-4, betas=(0.9, 0.999), weight decay=1e-3")
+
+    if scheduler_name:
+        print(f"Scheduler: {scheduler_name.replace('_', ' ').title()}")
+        scheduler_params = scheduler_params_str.split(',') if scheduler_params_str else []
+        if scheduler_name == 'reduce_lr_on_plateau':
+            mode = 'min' if len(scheduler_params) == 0 or scheduler_params[0] == '0' else 'max'
+            print(f"  - Mode: {mode}")
+            print(f"  - Patience: {scheduler_params[1] if len(scheduler_params) > 1 else '3'}")
+            print(f"  - Factor: {scheduler_params[2] if len(scheduler_params) > 2 else '0.1'}")
+            print(f"  - Verbose: {'True' if len(scheduler_params) < 4 or scheduler_params[3] == '1' else 'False'}")
+        elif scheduler_name == 'cosine_annealing':
+            print(f"  - T_max: {scheduler_params[0] if len(scheduler_params) > 0 else '10'}")
+            print(f"  - Eta_min: {scheduler_params[1] if len(scheduler_params) > 1 else '0'}")
+        else:
+            print("Default Scheduler: ReduceLRonPlateau with mode='min', patience=3, factor=0.1, verbose=True")
+
     print(f"Loss Function: {model_instance.loss_fn.__class__.__name__}")
-    print_divider("End of Configuration")
 
 
 def load_latest_checkpoint_model(val_dataset, test_dataset):
