@@ -111,6 +111,21 @@ class DefaultTrainDataset(Dataset):
         # Calculate the total number of images to process across all valid places
         self.total_num_images = sum(len(paths) for paths in self.dict_place_paths.values())
 
+        # Assuming you have a FeatureExtractor class
+        feature_extractor = FeatureExtractor()
+
+        # Dictionary to store features
+        features_dict = {}
+
+        # Assuming 'dataset_folder' is the path to your dataset
+        for place_id, paths in self.dict_place_paths.items():
+            for path in paths:
+                # Extract and store features
+                feature_vector = feature_extractor.extract_features(path)
+                features_dict[path] = feature_vector
+
+        self.features = features_dict
+
     def __getitem__(self, index):
         place_id = self.places_ids[index]
         all_paths_from_place_id = self.dict_place_paths[place_id]
