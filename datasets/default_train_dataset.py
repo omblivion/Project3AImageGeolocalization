@@ -4,8 +4,10 @@ from glob import glob
 import numpy as np
 import torch
 import torchvision.transforms as tfm
+import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision.models import resnet50
 
 # Define a transformation pipeline to preprocess the images
 default_transform = tfm.Compose([
@@ -14,6 +16,21 @@ default_transform = tfm.Compose([
     # Normalize images using predefined mean and std, aligning with common practice for models like ResNet
 ])
 
+
+class FeatureExtractor:
+    def __init__(self):
+        self.model = resnet50(pretrained=True).eval()
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+
+    def extract_features(self, image_path):
+        with torch.no_grad():
+            image = Image.open(image_path).convert('RGB')
+            image = self.transform(image).unsqueeze(0)  # Add batch dimension
+            return self.model(image).squeeze(0)  # Remove batch dimension for single image
 
 # Define the TrainDataset class that inherits from PyTorch's Dataset class
 class DefaultTrainDataset(Dataset):
@@ -95,17 +112,28 @@ class DefaultTrainDataset(Dataset):
         self.total_num_images = sum(len(paths) for paths in self.dict_place_paths.values())
 
     def __getitem__(self, index):
-        # Method to retrieve a batch of images and their associated place index
-        place_id = self.places_ids[index]  # Identify the place ID corresponding to the given index
-        all_paths_from_place_id = self.dict_place_paths[place_id]  # Retrieve all image paths for this place ID
+        place_id = self.places_ids[index]
+        all_paths_from_place_id = self.dict_place_paths[place_id]
 
-        # Randomly select a fixed number of images from those available for this place
-        chosen_paths = np.random.choice(all_paths_from_place_id, self.img_per_place, replace=False)
-        # Load, convert to RGB, and apply transformations to each selected image
+        # Extract features for all images in this place
+        features = [self.features[path] for path in all_paths_from_place_id]
+
+        # Calculate pairwise differences (simplified example using Euclidean distance)
+        diffs = np.zeros((len(features), len(features)))
+        for i in range(len(features)):
+            for j in range(len(features)):
+                diffs[i, j] = torch.norm(features[i] - features[j]).item()
+
+        # Select images based on these differences (example strategy: select two most dissimilar images)
+        if len(all_paths_from_place_id) > 1:
+            i, j = np.unravel_index(diffs.argmax(), diffs.shape)
+            chosen_paths = [all_paths_from_place_id[i], all_paths_from_place_id[j]]
+        else:
+            chosen_paths = [all_paths_from_place_id[0]]
+
         images = [self.transform(Image.open(path).convert('RGB')) for path in chosen_paths]
+        return torch.stack(images), torch.tensor(index).repeat(len(chosen_paths))
 
-        # Stack the list of images into a single tensor to form a batch
-        return torch.stack(images), torch.tensor(index).repeat(self.img_per_place)
 
     def __len__(self):
         # Return the total number of places in the dataset, determining the dataset's iteration size

@@ -222,10 +222,10 @@ def get_datasets_and_dataloaders(args):
     # Depending on the sampling strategy, create different samplers
     if args.sampling_str == 'contextual':
         train_dataset = ContextualDiverseTrainDataset(
-            # dataset_folder=args.train_path,
-            # img_per_place=args.img_per_place,
-            # min_img_per_place=args.min_img_per_place,
-            # transform=train_transform  # Apply defined transformations
+            dataset_folder=args.train_path,
+            img_per_place=args.img_per_place,
+            min_img_per_place=args.min_img_per_place,
+            transform=train_transform  # Apply defined transformations
         )
     else:
         train_dataset = DefaultTrainDataset(
