@@ -46,6 +46,8 @@ def parse_arguments():
                         help="Name of the scheduler to use ('reduce_lr_on_plateau', 'cosine_annealing')")
     parser.add_argument("--scheduler_params", type=str, default='',
                         help="Comma-separated list of parameters for the scheduler")
+    parser.add_argument("--show_progress_bar", type=bool, default=False,
+                        help="Whether to show the training progress bar (True/False)")
 
     args = parser.parse_args()
     return args

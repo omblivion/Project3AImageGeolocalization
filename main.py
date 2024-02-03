@@ -84,7 +84,7 @@ if __name__ == '__main__':
         callbacks=[checkpoint_cb],
         reload_dataloaders_every_n_epochs=1,
         log_every_n_steps=20,
-        enable_progress_bar=True
+        enable_progress_bar=args.show_progress_bar
     )
     print("Trainer initialized, all ready.")
 
