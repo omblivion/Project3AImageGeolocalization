@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from glob import glob
 
@@ -111,20 +112,34 @@ class DefaultTrainDataset(Dataset):
         # Calculate the total number of images to process across all valid places
         self.total_num_images = sum(len(paths) for paths in self.dict_place_paths.values())
 
-        # Assuming you have a FeatureExtractor class
-        feature_extractor = FeatureExtractor()
-
         # Dictionary to store features
         features_dict = {}
 
-        # Assuming 'dataset_folder' is the path to your dataset
-        for place_id, paths in self.dict_place_paths.items():
-            for path in paths:
-                # Extract and store features
-                feature_vector = feature_extractor.extract_features(path)
-                features_dict[path] = feature_vector
+        # Assuming you have a FeatureExtractor class
+        feature_extractor = FeatureExtractor()
 
-        self.features = features_dict
+        features_path = os.path.join(dataset_folder, "features_dict.pt")
+        if not os.path.exists(features_path):
+            # Dictionary to store features
+            features_dict = {}
+
+            # Assuming 'dataset_folder' is the path to your dataset
+            for place_id, paths in self.dict_place_paths.items():
+                for path in paths:
+                    # Extract and store features
+                    feature_vector = feature_extractor.extract_features(path)
+                    features_dict[path] = feature_vector
+
+            # Save the features dictionary for later use
+            features_path = os.path.join(dataset_folder, "features_dict.pt")
+            torch.save(features_dict, features_path)
+            self.features = features_dict
+        else:
+            # Load precomputed features
+            if os.path.exists(features_path):
+                self.features = torch.load(features_path)
+            else:
+                raise FileNotFoundError("Features file not found. Please precompute the features.")
 
     def __getitem__(self, index):
         place_id = self.places_ids[index]
