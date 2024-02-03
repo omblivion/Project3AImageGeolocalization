@@ -231,49 +231,69 @@ class ContextualDiverseTrainDataset(Dataset):
         return distances
 
     def __getitem__(self, index):
+        # Retrieve the unique identifier for the place corresponding to the given index.
         place_id = self.places_ids[index]
 
-        # Check if the chosen paths for this place_id are already cached
+        # Check if the set of diverse images for this place_id has already been selected and cached.
         if not self.cached_chosen_paths[place_id]:
+            # If not cached, retrieve all image paths associated with this place_id.
             all_paths_from_place_id = self.dict_place_paths[place_id]
+            # Select a subset of images that are diverse based on their contextual features.
             chosen_paths = self.select_diverse_images(all_paths_from_place_id)
+            # Cache the selected paths for future access to avoid re-computation.
             self.cached_chosen_paths[place_id] = chosen_paths
         else:
+            # If the diverse set of images is already cached, retrieve it directly.
             chosen_paths = self.cached_chosen_paths[place_id]
 
+        # Load, convert to RGB, and apply the specified transformations to each selected image.
         images = [Image.open(path).convert('RGB') for path in chosen_paths]
         images = [self.transform(img) for img in images]
 
+        # Stack the images into a single tensor and repeat the index for each image to indicate their origin.
         return torch.stack(images), torch.tensor(index).repeat(self.img_per_place)
 
+
     def select_diverse_images(self, image_paths):
+        # Determine the total number of images available for the current place.
         num_images = len(image_paths)
+
+        # If the number of available images is less than or equal to the desired number per place, return all images.
         if num_images <= self.img_per_place:
             return image_paths
 
-        # Extract features for the images
+        # For each image, retrieve precomputed contextual features from a dictionary.
         features = np.array([self.contextual_features[path] for path in image_paths])
 
-        # Determine the number of clusters (min of required images and available images)
+        # The number of clusters for K-Means is the smaller of the desired images per place or the total available images.
         num_clusters = min(self.img_per_place, len(features))
 
-        # Perform K-Means clustering
+        # Execute K-Means clustering on the features to group images into clusters based on similarity.
         kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init=10).fit(features)
+        # Assuming 'features' is your array of image features and 'kmeans' is your fitted K-Means model
+        centroids = kmeans.cluster_centers_
         labels = kmeans.labels_
 
-        # Select one image from each cluster
-        selected_indices = []
-        for cluster_id in range(num_clusters):
-            # Find indices of images in the current cluster
-            cluster_indices = np.where(labels == cluster_id)[0]
+        # Calculate distances of all features to their respective cluster centroids
+        distances_to_centroids = np.linalg.norm(features - centroids[labels], axis=1)
 
-            # Randomly select one image from this cluster
-            selected_index = np.random.choice(cluster_indices)
-            selected_indices.append(selected_index)
+        # Assuming distances_to_centroids is computed and labels are available
+        unique_labels = np.unique(labels)
+        # Initialize an array to hold the index of the minimum distance image for each cluster
+        selected_indices = np.zeros_like(unique_labels)
 
-        # Retrieve the paths of the selected images using their indices
+        for i, label in enumerate(unique_labels):
+            # Create a mask for the current cluster
+            mask = labels == label
+            # Use this mask to filter distances and identify the index of the minimum value
+            cluster_indices = np.arange(len(labels))[mask]
+            min_index = cluster_indices[np.argmin(distances_to_centroids[mask])]
+            selected_indices[i] = min_index
+
+        # Now, selected_indices contains the indices of the images closest to each cluster's centroid
         selected_image_paths = [image_paths[i] for i in selected_indices]
 
+        # Return the paths of the selected images, ensuring a diverse representation of the place.
         return selected_image_paths
 
     def __sizeof__(self):
