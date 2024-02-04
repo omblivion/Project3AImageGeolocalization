@@ -118,12 +118,27 @@ class DefaultTrainDataset(Dataset):
             # Dictionary to store features
             features_dict = {}
 
-            # Assuming 'dataset_folder' is the path to your dataset
+            # Calculate the total number of images to process for progress tracking
+            total_images = sum(len(paths) for paths in self.dict_place_paths.values())
+            images_processed = 0  # Initialize a counter for the number of processed images
+
+            print("Starting feature extraction...")
             for place_id, paths in self.dict_place_paths.items():
                 for path in paths:
                     # Extract and store features
                     feature_vector = feature_extractor.extract_features(path)
                     features_dict[path] = feature_vector
+
+                    # Update progress
+                    images_processed += 1
+                    progress = (images_processed / total_images) * 100  # Calculate progress as a percentage
+                    if images_processed % (total_images // 10) == 0:  # Check for every 10% progress
+                        print(f"Progress: {progress:.2f}%")
+
+            # Save the features dictionary for later use
+            torch.save(features_dict, features_path)
+            self.features = features_dict
+            print("Feature extraction completed.")
 
             # Save the features dictionary for later use
             features_path = os.path.join(os.getcwd(), "features_dict.pt")
