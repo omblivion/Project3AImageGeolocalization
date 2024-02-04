@@ -5,10 +5,9 @@ from glob import glob
 import numpy as np
 import torch
 import torchvision.transforms as tfm
-import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision.models import resnet50
+from torchvision.models import resnet50, ResNet50_Weights
 
 # Define a transformation pipeline to preprocess the images
 default_transform = tfm.Compose([
@@ -20,12 +19,8 @@ default_transform = tfm.Compose([
 
 class FeatureExtractor:
     def __init__(self):
-        self.model = resnet50(pretrained=True).eval()
-        self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        # Use the weights parameter with ResNet50_Weights.IMAGENET1K_V1 for pretrained weights
+        self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1).eval()
 
     def extract_features(self, image_path):
         with torch.no_grad():
