@@ -118,7 +118,7 @@ class DefaultTrainDataset(Dataset):
         # Assuming you have a FeatureExtractor class
         feature_extractor = FeatureExtractor()
 
-        features_path = os.path.join(dataset_folder, "features_dict.pt")
+        features_path = os.path.join(os.getcwd(), "features_dict.pt")
         if not os.path.exists(features_path):
             # Dictionary to store features
             features_dict = {}
@@ -131,7 +131,7 @@ class DefaultTrainDataset(Dataset):
                     features_dict[path] = feature_vector
 
             # Save the features dictionary for later use
-            features_path = os.path.join(dataset_folder, "features_dict.pt")
+            features_path = os.path.join(os.getcwd(), "features_dict.pt")
             torch.save(features_dict, features_path)
             self.features = features_dict
         else:
