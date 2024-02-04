@@ -25,7 +25,7 @@ class FeatureExtractor:
     def extract_features(self, image_path):
         with torch.no_grad():
             image = Image.open(image_path).convert('RGB')
-            image = self.transform(image).unsqueeze(0)  # Add batch dimension
+            image = self.model.transform(image).unsqueeze(0)  # Add batch dimension
             return self.model(image).squeeze(0)  # Remove batch dimension for single image
 
 # Define the TrainDataset class that inherits from PyTorch's Dataset class
