@@ -3,7 +3,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torch
 import torchvision.models
-from pytorch_metric_learning import losses
+from pytorch_metric_learning import losses, miners
 from torch.optim import ASGD, SGD, Adam, AdamW, lr_scheduler  # type: ignore
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as tfm
@@ -17,7 +17,7 @@ from p_adam import PAdam  # type: ignore
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
 class CustomLightningModel(pl.LightningModule):
-    def __init__(self, val_dataset, test_dataset, args):
+    def __init__(self, val_dataset, test_dataset, args=None):
         super().__init__()
         self.args = args
         self.val_dataset = val_dataset
@@ -26,15 +26,37 @@ class CustomLightningModel(pl.LightningModule):
         # Use values from args or defaults
         descriptors_dim = getattr(args, 'descriptors_dim', 512)
         num_preds_to_save = getattr(args, 'num_preds_to_save', 0)
-        save_only_wrong_preds = getattr(args, 'save_only_wrong_preds', True)
+        save_only_wrong_preds = getattr(args, 'save_only_wrong_preds', False)
 
         self.num_preds_to_save = num_preds_to_save
         self.save_only_wrong_preds = save_only_wrong_preds
-
         self.model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, descriptors_dim)
+        self.miner_fn = None #defined for TripletMargin
+        # Setting the loss function
+        loss_name = getattr(args, 'loss_name', 'contrastive')
+        loss_params = getattr(args, 'loss_params', '')
+        loss_params = [float(param) for param in loss_params.split(',') if param]
 
-        self.loss_fn = losses.ContrastiveLoss(pos_margin=0, neg_margin=1)
+        if loss_name == 'multisimilarity':
+            alpha = loss_params[0] if len(loss_params) > 0 else 2
+            beta = loss_params[1] if len(loss_params) > 1 else 50
+            base = loss_params[2] if len(loss_params) > 2 else 1
+            self.loss_fn = losses.MultiSimilarityLoss(alpha = alpha, beta = beta, base = base)
+        
+        elif loss_name == "tripletmargin":
+            margin = loss_params[0] if len(loss_params) > 0 else 0.05
+            # Set miner with the same margin
+            self.miner_fn = miners.TripletMarginMiner(margin=margin)
+            self.loss_fn = losses.TripletMarginLoss(margin=margin)
+
+        elif loss_name == "fastap":
+            num_bins = loss_params[0] if len(loss_params) > 0 else 10
+            self.loss_fn = losses.FastAPLoss(num_bins = num_bins)
+
+        else:
+            #default setting of loss to the Contrastive Loss
+            self.loss_fn = losses.ContrastiveLoss(pos_margin=0, neg_margin=1)
 
     def forward(self, images):  # Forward pass method
         descriptors = self.model(images)  # Pass images through the model to get descriptors
@@ -137,7 +159,12 @@ class CustomLightningModel(pl.LightningModule):
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
-        loss = self.loss_fn(descriptors, labels)  # Compute Contrastive loss
+        
+        if self.miner_fn is not None:
+            miner_output = self.miner_fn(descriptors, labels)
+            loss = self.loss_fn(descriptors, labels, miner_output)
+        else:
+            loss = self.loss_fn(descriptors, labels)  # Compute loss
         return loss
 
     def training_step(self, batch, batch_idx):  # Method for a single training step
