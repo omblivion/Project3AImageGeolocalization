@@ -7,6 +7,7 @@ import torch
 import torchvision.transforms as tfm
 from PIL import Image
 from torch.utils.data import Dataset
+from torchvision import transforms
 from torchvision.models import resnet50, ResNet50_Weights
 
 # Define a transformation pipeline to preprocess the images
@@ -21,12 +22,20 @@ class FeatureExtractor:
     def __init__(self):
         # Use the weights parameter with ResNet50_Weights.IMAGENET1K_V1 for pretrained weights
         self.model = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1).eval()
+        # Define the transform
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),  # Resize the image to 224x224 pixels
+            transforms.ToTensor(),  # Convert the image to a PyTorch tensor
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # Normalize the image
+        ])
 
     def extract_features(self, image_path):
         with torch.no_grad():
             image = Image.open(image_path).convert('RGB')
-            image = self.model.transform(image).unsqueeze(0)  # Add batch dimension
-            return self.model(image).squeeze(0)  # Remove batch dimension for single image
+            image = self.transform(image)  # Apply the defined preprocessing
+            image = image.unsqueeze(0)  # Add a batch dimension
+            features = self.model(image)  # Extract features
+            return features.squeeze(0)  # Remove the batch dimension for the single image
 
 # Define the TrainDataset class that inherits from PyTorch's Dataset class
 class DefaultTrainDataset(Dataset):
