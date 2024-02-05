@@ -35,8 +35,8 @@ def parse_arguments():
     parser.add_argument("--test", type=str, default=None,
                         help="Path to a model checkpoint to load for evaluation, use 'latest' to load the most recent checkpoint. Leave empty for training.")
     # Model parameters
-    parser.add_argument("--sampling_str", type=str, default=None,
-                        help="Specifies the sampling strategy to use during training. Options are 'per_class' for MPerClassSampler, 'hierarchical' for HierarchicalSampler, or None for random sampling.")
+    parser.add_argument("--mining_str", type=str, default=None,
+                        help="Specifies the mining strategy to use during training. Options are 'per_class' for contextual or None for random mining.")
     parser.add_argument("--optimizer_name", type=str, default=None,
                         help="Name of the optimizer to use ('adamw', 'asgd', 'adam', 'sgd')")
     parser.add_argument("--optimizer_params", type=str, default=None,

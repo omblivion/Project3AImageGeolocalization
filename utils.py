@@ -149,8 +149,8 @@ def print_program_config(args):
     print(f"Image per Place: {args.img_per_place}")
     print(f"Minimum Image per Place: {args.min_img_per_place}")
 
-    sampling_str = args.sampling_str if args.sampling_str else "Random sampling"
-    print(f"Sampling Strategy: {sampling_str}")
+    mining_str = args.mining_str if args.mining_str else "Random mining"
+    print(f"Mining Strategy: {mining_str}")
 
     # Check if the testing argument is provided and print relevant information
     if hasattr(args, 'test') and args.test:

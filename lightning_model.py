@@ -2,6 +2,8 @@
 import numpy as np
 import pytorch_lightning as pl
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.models
 from pytorch_metric_learning import losses, miners
 from torch.optim import ASGD, SGD, Adam, AdamW, lr_scheduler  # type: ignore
@@ -13,6 +15,19 @@ from datasets.contextual_train_dataset import ContextualDiverseTrainDataset
 from datasets.default_train_dataset import DefaultTrainDataset
 from datasets.test_dataset import TestDataset
 from p_adam import PAdam  # type: ignore
+
+
+class GeMPooling(nn.Module):
+    def __init__(self, p=3.0, eps=1e-6):
+        super(GeMPooling, self).__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)  # Initialize p
+        self.eps = eps
+
+    def forward(self, x):
+        return self.gem(x, p=self.p, eps=self.eps)
+
+    def gem(self, x, p=3, eps=1e-6):
+        return F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1. / p)
 
 
 # Defining a custom model class that inherits from pytorch_lightning.LightningModule
@@ -32,18 +47,22 @@ class CustomLightningModel(pl.LightningModule):
         self.save_only_wrong_preds = save_only_wrong_preds
         self.model = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
         self.model.fc = torch.nn.Linear(self.model.fc.in_features, descriptors_dim)
-        self.miner_fn = None #defined for TripletMargin
+        self.miner_fn = None  # defined for TripletMargin
+
+        self.model.avgpool = GeMPooling()
         # Setting the loss function
+        self.set_loss(args)
+
+    def set_loss(self, args):
         loss_name = getattr(args, 'loss_name', 'contrastive')
         loss_params = getattr(args, 'loss_params', '')
         loss_params = [float(param) for param in loss_params.split(',') if param]
-
         if loss_name == 'multisimilarity':
             alpha = loss_params[0] if len(loss_params) > 0 else 2
             beta = loss_params[1] if len(loss_params) > 1 else 50
             base = loss_params[2] if len(loss_params) > 2 else 1
-            self.loss_fn = losses.MultiSimilarityLoss(alpha = alpha, beta = beta, base = base)
-        
+            self.loss_fn = losses.MultiSimilarityLoss(alpha=alpha, beta=beta, base=base)
+
         elif loss_name == "tripletmargin":
             margin = loss_params[0] if len(loss_params) > 0 else 0.05
             # Set miner with the same margin
@@ -52,10 +71,10 @@ class CustomLightningModel(pl.LightningModule):
 
         elif loss_name == "fastap":
             num_bins = loss_params[0] if len(loss_params) > 0 else 10
-            self.loss_fn = losses.FastAPLoss(num_bins = num_bins)
+            self.loss_fn = losses.FastAPLoss(num_bins=num_bins)
 
         else:
-            #default setting of loss to the Contrastive Loss
+            # default setting of loss to the Contrastive Loss
             self.loss_fn = losses.ContrastiveLoss(pos_margin=0, neg_margin=1)
 
     def forward(self, images):  # Forward pass method
@@ -113,7 +132,7 @@ class CustomLightningModel(pl.LightningModule):
                 lambda_p = optimizer_params[5] if len(optimizer_params) > 5 else 1e-02
                 p_norm = optimizer_params[6] if len(optimizer_params) > 6 else 1
                 optimizer = PAdam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay,
-                                              lambda_p=lambda_p, p_norm=p_norm)
+                                  lambda_p=lambda_p, p_norm=p_norm)
             else:
                 print("Using default optimizer!")
                 optimizer = default_optimizer
@@ -159,7 +178,7 @@ class CustomLightningModel(pl.LightningModule):
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'loss'}
 
     def loss_function(self, descriptors, labels):  # Method to compute loss
-        
+
         if self.miner_fn is not None:
             miner_output = self.miner_fn(descriptors, labels)
             loss = self.loss_fn(descriptors, labels, miner_output)
@@ -246,8 +265,8 @@ def get_datasets_and_dataloaders(args):
         # Normalize tensors with given mean and std
     ])
 
-    # Depending on the sampling strategy, create different samplers
-    if args.sampling_str == 'contextual':
+    # Depending on the mining strategy, create different samplers
+    if args.mining_str == 'contextual':
         train_dataset = ContextualDiverseTrainDataset(
             dataset_folder=args.train_path,
             img_per_place=args.img_per_place,

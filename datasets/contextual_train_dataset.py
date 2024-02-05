@@ -27,7 +27,7 @@ Contextual Feature Extraction: Extract contextual features from images that are 
 These features could include the presence of specific objects (like vehicles, pedestrians, signs), the time of day (daylight, night), weather conditions (sunny, rainy), and urban vs. rural settings. 
 This requires a pre-processing step where such features are either manually labeled or automatically detected using a pre-trained object detection or scene classification model.
 
-Diversity Sampling Based on Contextual Features: Once you have these contextual features, the sampling strategy should aim to select images that represent a diverse set of these features for each place. 
+Diversity mining Based on Contextual Features: Once you have these contextual features, the mining strategy should aim to select images that represent a diverse set of these features for each place. 
 This ensures that the model is trained on images that are not just visually diverse but also contextually varied.
 """
 
