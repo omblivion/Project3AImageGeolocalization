@@ -118,6 +118,7 @@ class CustomLightningModel(pl.LightningModule):
                 eps = optimizer_params[3] if len(optimizer_params) > 3 else 1e-08
                 weight_decay = optimizer_params[4] if len(optimizer_params) > 4 else 0
                 optimizer = Adam(self.parameters(), lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
+                return optimizer
             elif optimizer_name == 'sgd':
                 lr = optimizer_params[0] if len(optimizer_params) > 0 else 1e-02
                 momentum = optimizer_params[1] if len(optimizer_params) > 1 else 0
