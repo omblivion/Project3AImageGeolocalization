@@ -47,29 +47,21 @@ if __name__ == '__main__':
     else:
         # Initialize the model for training from scratch
         print("No checkpoint provided, initializing model for training...")
-        print("Preparing datasets and dataloaders...")
-        # Get datasets and data loaders
-
-        print("Datasets and dataloaders ready.")
-
-        print("Initializing the model...")
         # Instantiate a Lightning model with given parameters
         model = CustomLightningModel(val_dataset, test_dataset, args)
         initial_weights = {name: param.clone() for name, param in model.named_parameters()}
-
     print("Model loaded successfully")
     utils.print_model_configuration(model)
-
     checkpoint_cb = utils.checkpoint_setup(args)
 
     if torch.cuda.is_available():
         accelerator = 'gpu'
-        devices = 1  # Assuming you want to use 1 GPU
-        precision = 16  # Use 16-bit precision on GPU
+        devices = 1  # Assuming 1 GPU
+        precision = 16  # 16-bit precision GPU
         print("Trainer configured with GPU.")
     else:
         accelerator = 'cpu'
-        devices = None  # No device IDs are needed for CPU training
+        devices = None  # No device IDs for CPU training
         precision = 32  # Use full precision on CPU
         print("Trainer configured with CPU.")
 
